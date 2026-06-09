@@ -7,3 +7,4 @@ class QuizSession(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
     code      = db.Column(db.String(10), unique=True, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    quiz_type = db.Column(db.String(20), default="option1", nullable=False)

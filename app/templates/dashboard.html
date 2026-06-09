@@ -27,9 +27,16 @@
     <div class="bg-white rounded-2xl shadow p-6">
       <h2 class="text-xl font-bold text-gray-800 mb-4">Quản lý buổi học</h2>
 
-      <div class="flex flex-wrap gap-3 mb-6">
+      <div class="flex flex-wrap gap-4 items-end mb-6">
+        <div class="flex flex-col gap-1.5 min-w-[280px]">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Chọn loại bài kiểm tra để giao</label>
+          <select id="quizTypeSelect" class="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 font-semibold text-gray-700 focus:outline-none focus:border-blue-500 transition shadow-sm">
+            <option value="option1">Option 1: Kiểm tra thao tác đúc (Đúc 5230-5260 mới nhất.xls)</option>
+            <option value="option2">Option 2: Kiểm tra TIE (Đáp án Bài kiểm tra.pptx)</option>
+          </select>
+        </div>
         <button id="startBtn" onclick="startQuiz()"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2">
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shadow">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M12 4v16m8-8H4"/>
@@ -37,7 +44,7 @@
           Giao bài mới
         </button>
         <button onclick="loadResults()"
-          class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2">
+          class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shadow-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -53,7 +60,8 @@
           <!-- Code + QR -->
           <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center">
             <p class="text-sm text-blue-600 font-medium mb-2">Mã tham gia</p>
-            <p id="quizCode" class="text-5xl font-black text-blue-700 tracking-widest mb-3">——</p>
+            <p id="quizCode" class="text-5xl font-black text-blue-700 tracking-widest mb-1">——</p>
+            <p id="activeQuizTypeName" class="text-xs text-blue-600 font-bold bg-blue-100 px-3 py-1 rounded-full inline-block mb-3">——</p>
             <p class="text-xs text-gray-500 mb-4">Học viên nhập mã này tại trang Quiz</p>
             <div id="qrContainer" class="flex justify-center">
               <img id="qrImage" src="" alt="QR Code" class="w-40 h-40 rounded-lg shadow" />
@@ -124,15 +132,23 @@
 
     async function startQuiz() {
       const btn = document.getElementById('startBtn');
+      const quizType = document.getElementById('quizTypeSelect').value;
       btn.disabled = true;
       btn.textContent = 'Đang tạo...';
 
       try {
-        const res = await fetch('/quiz/start', { method: 'POST' });
+        const res = await fetch('/quiz/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quiz_type: quizType })
+        });
         const data = await res.json();
 
         currentCode = data.code;
         document.getElementById('quizCode').textContent = data.code;
+        
+        const typeName = data.quiz_type === 'option2' ? 'Option 2: Kiểm tra TIE' : 'Option 1: Kiểm tra thao tác đúc';
+        document.getElementById('activeQuizTypeName').textContent = typeName;
 
         // QR via public API (no key needed)
         const quizUrl = window.location.origin + '/quiz-page?code=' + data.code;
@@ -177,6 +193,9 @@
         document.getElementById('countSubmitted').textContent = submitted;
         document.getElementById('avgScore').textContent = avg;
 
+        const typeName = data.quiz_type === 'option2' ? 'Option 2: Kiểm tra TIE' : 'Option 1: Kiểm tra thao tác đúc';
+        document.getElementById('activeQuizTypeName').textContent = typeName;
+
         const tbody = document.getElementById('resultsBody');
         if (students.length === 0) {
           tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">Chưa có học viên nào</td></tr>';
@@ -188,10 +207,21 @@
           const rank = rankEmoji[i] || (i + 1);
           const pct = Math.round((s.score / data.total_steps) * 100);
           const barColor = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-400';
+          
+          let progressBadge = '';
+          if (data.quiz_type === 'option2') {
+            progressBadge = `<span class="text-xs text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded ml-2 font-normal">${escHtml(s.progress_text || "Chưa làm bài nào")}</span>`;
+          }
+          
           return `
             <tr class="hover:bg-gray-50 transition">
               <td class="px-4 py-3 font-semibold text-gray-600">${rank}</td>
-              <td class="px-4 py-3 font-medium text-gray-800">${escHtml(s.name)}</td>
+              <td class="px-4 py-3 font-medium text-gray-800">
+                <div class="flex items-center">
+                  <span>${escHtml(s.name)}</span>
+                  ${progressBadge}
+                </div>
+              </td>
               <td class="px-4 py-3 text-center">
                 <div class="flex items-center gap-2 justify-center">
                   <div class="w-24 bg-gray-200 rounded-full h-2">
@@ -202,7 +232,7 @@
               </td>
               <td class="px-4 py-3 text-center">
                 ${s.submitted
-                  ? '<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">✓ Đã nộp</span>'
+                  ? '<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">✓ Đang học/Đã nộp</span>'
                   : '<span class="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-1 rounded-full">⏳ Chờ nộp</span>'
                 }
               </td>
@@ -224,6 +254,13 @@
         if (data.active) {
           currentCode = data.code;
           document.getElementById('quizCode').textContent = data.code;
+          const typeName = data.quiz_type === 'option2' ? 'Option 2: Kiểm tra TIE' : 'Option 1: Kiểm tra thao tác đúc';
+          document.getElementById('activeQuizTypeName').textContent = typeName;
+          
+          // Pre-select the matching value in dropdown if it exists
+          const selectEl = document.getElementById('quizTypeSelect');
+          if (selectEl) selectEl.value = data.quiz_type || 'option1';
+
           const quizUrl = window.location.origin + '/quiz-page?code=' + data.code;
           document.getElementById('qrImage').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(quizUrl);
           document.getElementById('sessionInfo').classList.remove('hidden');

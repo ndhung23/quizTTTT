@@ -10,6 +10,12 @@ def init_db(app):
     with app.app_context():
         from app.models import user, student, session  # noqa: F401 – register models
         db.create_all()
+        try:
+            db.session.execute(db.text("ALTER TABLE quiz_sessions ADD COLUMN quiz_type VARCHAR(20) DEFAULT 'option1'"))
+            db.session.commit()
+            print("Successfully added quiz_type column to quiz_sessions")
+        except Exception:
+            db.session.rollback()
         _seed_users()
 
 
@@ -25,9 +31,9 @@ def _seed_users():
             ]
             db.session.add_all(seed)
             db.session.commit()
-            print("✅ Seeded 3 default users")
+            print("Seeded 3 default users")
         else:
-            print("ℹ️  Users already exist – skip seed")
+            print("Users already exist - skip seed")
     except Exception as e:
         db.session.rollback()
-        print(f"⚠️  Seed warning: {e}")
+        print(f"Seed warning: {e}")

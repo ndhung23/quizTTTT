@@ -4,3 +4,5 @@ __pycache__/
 *.db
 .env
 *.sqlite3
+
+#  py -m flask --app app.app run --debug  
