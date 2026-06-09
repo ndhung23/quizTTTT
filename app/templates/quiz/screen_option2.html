@@ -1,0 +1,147 @@
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 3 – OPTION 2: DASHBOARD 10 BÀI KIỂM TRA TIE
+     ══════════════════════════════════════════════════════════ -->
+<div id="screenOption2" class="hidden min-h-screen flex flex-col">
+  <!-- Top header -->
+  <div class="bg-slate-900/90 backdrop-blur border-b border-white/10 px-6 py-4 flex items-center justify-between shadow-md">
+    <div>
+      <h2 class="font-black text-lg text-white">Kiểm tra TIE (Tổng hợp)</h2>
+      <p class="text-blue-300 text-xs mt-0.5 font-medium">
+        Chọn lần lượt các bài thi để làm. Làm xong bài nào nút sẽ chuyển sang <span class="text-green-400 font-bold">màu xanh lá</span>.
+      </p>
+    </div>
+    <div class="text-right flex items-center gap-4">
+      <div class="text-right">
+        <p class="text-xs text-slate-400 font-medium">Học viên</p>
+        <p id="studentNameO2" class="font-bold text-sm text-blue-400"></p>
+      </div>
+      <div class="bg-blue-600/30 border border-blue-500/50 rounded-xl px-4 py-2 text-center">
+        <span class="text-[10px] uppercase font-bold text-blue-300 tracking-wider block">Điểm tích lũy</span>
+        <span id="totalScoreO2" class="text-lg font-black text-white">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards Grid -->
+  <div class="flex-1 max-w-5xl mx-auto w-full p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pb-20">
+    <!-- Sub Quiz 1 -->
+    <button onclick="openSubQuiz(1)" id="subBtn-1" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 1</span>
+        <span class="text-base font-bold text-white mt-1 block">Cơ bản TIE</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-1" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-1" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+
+    <!-- Sub Quiz 2 -->
+    <button onclick="openSubQuiz(2)" id="subBtn-2" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 2</span>
+        <span class="text-base font-bold text-white mt-1 block">7 loại lãng phí</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-2" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-2" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+
+    <!-- Sub Quiz 3 -->
+    <button onclick="openSubQuiz(3)" id="subBtn-3" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 3</span>
+        <span class="text-base font-bold text-white mt-1 block">Phân tích thời gian</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-3" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-3" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+
+    <!-- Sub Quiz 4 -->
+    <button onclick="openSubQuiz(4)" id="subBtn-4" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 4</span>
+        <span class="text-base font-bold text-white mt-1 block">Thao tác tiêu chuẩn</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-4" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-4" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+
+    <!-- Sub Quiz 5 -->
+    <button onclick="openSubQuiz(5)" id="subBtn-5" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 5</span>
+        <span class="text-base font-bold text-white mt-1 block">8 hạng mục cơ bản</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-5" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-5" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+
+    <!-- Sub Quiz 6 -->
+    <button onclick="openSubQuiz(6)" id="subBtn-6" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 6</span>
+        <span class="text-base font-bold text-white mt-1 block">Mục đích phân tích động tác</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-6" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-6" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+
+    <!-- Sub Quiz 7 -->
+    <button onclick="openSubQuiz(7)" id="subBtn-7" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 7</span>
+        <span class="text-base font-bold text-white mt-1 block">Cấu thành thao tác</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-7" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-7" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+
+    <!-- Sub Quiz 8 -->
+    <button onclick="openSubQuiz(8)" id="subBtn-8" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 8</span>
+        <span class="text-base font-bold text-white mt-1 block">4 nguyên tắc cải thiện</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-8" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-8" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+
+    <!-- Sub Quiz 9 -->
+    <button onclick="openSubQuiz(9)" id="subBtn-9" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 9</span>
+        <span class="text-base font-bold text-white mt-1 block">Cải thiện động tác cơ bản</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-9" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-9" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+
+    <!-- Sub Quiz 10 -->
+    <button onclick="openSubQuiz(10)" id="subBtn-10" class="sub-card-white rounded-2xl p-5 text-left transition hover:scale-[1.02] flex flex-col justify-between h-36">
+      <div>
+        <span class="text-xs font-bold text-slate-400 tracking-widest block uppercase">Bài 10</span>
+        <span class="text-base font-bold text-white mt-1 block">Giới hạn sản lượng</span>
+      </div>
+      <div class="flex items-center justify-between w-full mt-4">
+        <span id="subStatus-10" class="text-xs text-slate-500 font-semibold">Chưa làm</span>
+        <span id="subScore-10" class="text-sm font-bold text-slate-300"></span>
+      </div>
+    </button>
+  </div>
+</div>

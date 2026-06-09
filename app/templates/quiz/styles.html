@@ -1,0 +1,48 @@
+<style>
+  /* Premium aesthetics */
+  body {
+    background: radial-gradient(circle at top, #1e293b, #0f172a, #020617);
+    min-height: 100vh;
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px border-white/10;
+  }
+  .pool-card {
+    cursor: grab;
+    user-select: none;
+    transition: all 0.2s ease;
+  }
+  .pool-card:active {
+    cursor: grabbing;
+  }
+  .pool-card.selected {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+    transform: scale(1.05);
+  }
+  .drop-cell {
+    min-height: 50px;
+    transition: all 0.2s ease;
+  }
+  .drop-cell.over {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: #3b82f6;
+  }
+  .sub-card-green {
+    background: rgba(16, 185, 129, 0.15);
+    border: 2px solid rgba(16, 185, 129, 0.6);
+  }
+  .sub-card-white {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .animate-slide-up {
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+</style>

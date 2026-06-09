@@ -199,3 +199,22 @@ def get_active():
     if not session:
         return jsonify({"active": False})
     return jsonify({"active": True, "code": session.code, "quiz_type": session.quiz_type})
+
+
+# ─── POST /quiz/reset ────────────────────────────────────────────
+@quiz_bp.post("/reset")
+def reset_student():
+    data = request.get_json(force=True, silent=True) or {}
+    student_id = data.get("student_id")
+    if not student_id:
+        abort(400, description="Thiếu student_id")
+
+    student = Student.query.filter_by(id=student_id).first()
+    if not student:
+        abort(404, description="Không tìm thấy học viên")
+
+    student.score = 0
+    student.answer_order = None
+    db.session.commit()
+
+    return jsonify({"ok": True, "message": "Đã reset bài làm thành công"})

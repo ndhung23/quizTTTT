@@ -1,0 +1,75 @@
+<!-- Modal / Overlay for Sub-Quiz Exercises -->
+<div id="subQuizModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="glass-card rounded-3xl border border-white/10 w-full max-w-4xl p-4 sm:p-6 flex flex-col max-h-[95vh] sm:max-h-[90vh]">
+    <div class="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+      <h3 id="modalTitle" class="text-lg font-black text-white">Bài thi TIE</h3>
+      <button onclick="closeSubQuizModal()" class="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Active Sub-Quiz container -->
+    <div id="modalContent" class="flex-1 overflow-y-auto pr-2 space-y-4 text-slate-200">
+      <!-- Injected exercises here -->
+    </div>
+
+    <!-- Footer buttons -->
+    <div class="border-t border-white/10 pt-4 mt-4 flex justify-between items-center">
+      <p id="modalProgress" class="text-xs text-slate-400 font-semibold"></p>
+      <div class="flex gap-2">
+        <button onclick="closeSubQuizModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl transition text-sm">
+          Thoát
+        </button>
+        <button id="modalSubmitBtn" onclick="gradeAndSubmitSubQuiz()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2 sm:px-8 sm:py-2.5 rounded-xl transition text-sm flex items-center gap-1.5 shadow-lg shadow-blue-600/10">
+          Lưu bài làm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Selection Drawer for Option 1 -->
+<div id="selectionModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+  <div class="glass-card rounded-t-3xl sm:rounded-3xl border border-white/10 w-full max-w-lg p-5 flex flex-col max-h-[85vh] sm:max-h-[80vh] animate-slide-up">
+    <!-- Title & Close Button -->
+    <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+      <h3 id="selectionTitle" class="text-base font-bold text-white">Chọn mảnh ghép</h3>
+      <button onclick="closeSelectionModal()" class="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-lg transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <!-- Content: list of items -->
+    <div id="selectionOptions" class="overflow-y-auto space-y-2 flex-1 pr-1">
+      <!-- Option items injected here -->
+    </div>
+    <!-- Actions -->
+    <div id="selectionActions" class="border-t border-white/10 pt-3 mt-4 hidden">
+      <button id="btnRemoveSelection" class="w-full bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-300 font-bold py-2.5 rounded-xl transition text-sm">
+        Xóa lựa chọn hiện tại
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Definition Picker Modal for Option 2 Matching Exercises -->
+<div id="matchingPickerModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+  <div class="glass-card rounded-t-3xl sm:rounded-3xl border border-white/10 w-full max-w-2xl p-5 flex flex-col max-h-[85vh] sm:max-h-[80vh] animate-slide-up">
+    <!-- Title & Close Button -->
+    <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+      <h3 id="matchingPickerTitle" class="text-base font-bold text-white">Chọn định nghĩa thích hợp</h3>
+      <button onclick="closeMatchingPicker()" class="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-lg transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <!-- Content: list of definitions -->
+    <div id="matchingPickerOptions" class="overflow-y-auto space-y-2 flex-1 pr-1">
+      <!-- Options injected by JS -->
+    </div>
+  </div>
+</div>

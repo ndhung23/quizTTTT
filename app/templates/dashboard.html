@@ -5,6 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DENSO Quiz – Dashboard Giảng viên</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        font-family: sans-serif;
+      }
+      nav, 
+      .max-w-5xl > :not(#resultsCard), 
+      #liveLabel,
+      #btnPrintResults,
+      #resultsCard h2 {
+        display: none !important;
+      }
+      #resultsCard {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+        width: 100% !important;
+      }
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 15px !important;
+      }
+      th, td {
+        border: 1px solid #000 !important;
+        padding: 8px !important;
+        color: #000 !important;
+        background: transparent !important;
+        text-align: left !important;
+      }
+      th {
+        font-weight: bold !important;
+        background-color: #f3f4f6 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      th:nth-child(1), td:nth-child(1),
+      th:nth-child(3), td:nth-child(3) {
+        text-align: center !important;
+      }
+      .w-24.bg-gray-200 {
+        display: none !important;
+      }
+      th:nth-child(4), td:nth-child(4) {
+        display: none !important;
+      }
+      #printHeader, #printFooter {
+        display: block !important;
+      }
+    }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-100">
 
@@ -90,9 +145,29 @@
 
     <!-- Results Table -->
     <div id="resultsCard" class="hidden bg-white rounded-2xl shadow p-6">
+      
+      <!-- Print Header (Hidden on screen, visible on print) -->
+      <div id="printHeader" class="hidden text-black mb-6">
+        <h1 class="text-center font-bold text-2xl uppercase tracking-wider mb-4">Phiếu Kết Quả Đánh Giá Kỹ Năng</h1>
+        <div class="grid grid-cols-2 gap-y-2 text-sm font-semibold border-b-2 border-black pb-4 mb-2">
+          <div>Giảng viên đánh giá: <span id="printLecturerCode" class="font-normal">——</span></div>
+          <div class="text-right">Ngày đánh giá: <span id="printDate" class="font-normal">——</span></div>
+          <div>Loại bài kiểm tra: <span id="printQuizType" class="font-normal">——</span></div>
+          <div class="text-right">Mã phòng thi: <span id="printSessionCode" class="font-normal">——</span></div>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-gray-800">Kết quả thời gian thực</h2>
-        <span class="text-xs text-gray-400 animate-pulse" id="liveLabel">● Tự động cập nhật mỗi 2s</span>
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-bold text-gray-800">Kết quả thời gian thực</h2>
+          <span class="text-xs text-gray-400 animate-pulse" id="liveLabel">● Tự động cập nhật mỗi 2s</span>
+        </div>
+        <button id="btnPrintResults" onclick="preparePrint()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          In kết quả
+        </button>
       </div>
 
       <div class="overflow-x-auto">
@@ -112,6 +187,23 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Print Footer (Hidden on screen, visible on print) -->
+      <div id="printFooter" class="hidden text-black mt-12">
+        <div class="flex justify-between text-sm font-semibold">
+          <div class="w-1/3 text-center">
+            <p>HỌC VIÊN</p>
+            <p class="text-[10px] text-gray-500 font-normal italic mt-1">(Ký và ghi rõ họ tên)</p>
+            <div class="h-24"></div>
+          </div>
+          <div class="w-1/3 text-center">
+            <p>GIẢNG VIÊN ĐÁNH GIÁ</p>
+            <p class="text-[10px] text-gray-500 font-normal italic mt-1">(Ký và ghi rõ họ tên)</p>
+            <div class="h-24"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -244,6 +336,23 @@
 
     function escHtml(s) {
       return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function preparePrint() {
+      const username = sessionStorage.getItem('username') || 'hv90122';
+      document.getElementById('printLecturerCode').textContent = username;
+      
+      const today = new Date();
+      const dateStr = today.getDate().toString().padStart(2, '0') + '/' + 
+                      (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                      today.getFullYear();
+      document.getElementById('printDate').textContent = dateStr;
+      
+      const activeQuizTypeName = document.getElementById('activeQuizTypeName').textContent;
+      document.getElementById('printQuizType').textContent = activeQuizTypeName;
+      document.getElementById('printSessionCode').textContent = currentCode || '——';
+      
+      window.print();
     }
 
     // Try to restore active session on load
