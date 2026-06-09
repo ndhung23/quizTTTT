@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DENSO Quiz – Dashboard Giảng viên</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-100">
+
+  <!-- Navbar -->
+  <nav class="bg-blue-700 text-white px-6 py-4 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+        <span class="text-blue-700 font-bold text-sm">D</span>
+      </div>
+      <span class="font-bold text-lg">DENSO Quiz – Giảng viên</span>
+    </div>
+    <button onclick="logout()" class="text-sm bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg transition">
+      Đăng xuất
+    </button>
+  </nav>
+
+  <div class="max-w-5xl mx-auto p-6 space-y-6">
+
+    <!-- Control Card -->
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Quản lý buổi học</h2>
+
+      <div class="flex flex-wrap gap-3 mb-6">
+        <button id="startBtn" onclick="startQuiz()"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 4v16m8-8H4"/>
+          </svg>
+          Giao bài mới
+        </button>
+        <button onclick="loadResults()"
+          class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Làm mới
+        </button>
+      </div>
+
+      <!-- Session Info -->
+      <div id="sessionInfo" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- Code + QR -->
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center">
+            <p class="text-sm text-blue-600 font-medium mb-2">Mã tham gia</p>
+            <p id="quizCode" class="text-5xl font-black text-blue-700 tracking-widest mb-3">——</p>
+            <p class="text-xs text-gray-500 mb-4">Học viên nhập mã này tại trang Quiz</p>
+            <div id="qrContainer" class="flex justify-center">
+              <img id="qrImage" src="" alt="QR Code" class="w-40 h-40 rounded-lg shadow" />
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Quét QR để vào thẳng trang bài</p>
+          </div>
+
+          <!-- Stats -->
+          <div class="space-y-4">
+            <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+              <p class="text-sm text-green-600 font-medium">Số học viên đã vào</p>
+              <p id="countJoined" class="text-4xl font-bold text-green-700">0</p>
+            </div>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+              <p class="text-sm text-yellow-600 font-medium">Đã nộp bài</p>
+              <p id="countSubmitted" class="text-4xl font-bold text-yellow-700">0</p>
+            </div>
+            <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
+              <p class="text-sm text-purple-600 font-medium">Điểm trung bình</p>
+              <p id="avgScore" class="text-4xl font-bold text-purple-700">—</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Table -->
+    <div id="resultsCard" class="hidden bg-white rounded-2xl shadow p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Kết quả thời gian thực</h2>
+        <span class="text-xs text-gray-400 animate-pulse" id="liveLabel">● Tự động cập nhật mỗi 2s</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 text-gray-600 uppercase text-xs">
+              <th class="px-4 py-3 text-left rounded-l-lg">Hạng</th>
+              <th class="px-4 py-3 text-left">Học viên</th>
+              <th class="px-4 py-3 text-center">Điểm</th>
+              <th class="px-4 py-3 text-center rounded-r-lg">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody" class="divide-y divide-gray-100">
+            <tr>
+              <td colspan="4" class="text-center text-gray-400 py-8">Chưa có học viên nào</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Auth guard
+    if (!sessionStorage.getItem('loggedIn')) {
+      window.location.href = '/';
+    }
+
+    let currentCode = null;
+    let autoRefreshTimer = null;
+
+    function logout() {
+      sessionStorage.removeItem('loggedIn');
+      window.location.href = '/';
+    }
+
+    async function startQuiz() {
+      const btn = document.getElementById('startBtn');
+      btn.disabled = true;
+      btn.textContent = 'Đang tạo...';
+
+      try {
+        const res = await fetch('/quiz/start', { method: 'POST' });
+        const data = await res.json();
+
+        currentCode = data.code;
+        document.getElementById('quizCode').textContent = data.code;
+
+        // QR via public API (no key needed)
+        const quizUrl = window.location.origin + '/quiz-page?code=' + data.code;
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(quizUrl);
+        document.getElementById('qrImage').src = qrUrl;
+
+        document.getElementById('sessionInfo').classList.remove('hidden');
+        document.getElementById('resultsCard').classList.remove('hidden');
+
+        startAutoRefresh();
+
+      } catch (err) {
+        alert('Lỗi tạo phòng: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg> Giao bài mới`;
+      }
+    }
+
+    function startAutoRefresh() {
+      clearInterval(autoRefreshTimer);
+      loadResults();
+      autoRefreshTimer = setInterval(loadResults, 2000);
+    }
+
+    async function loadResults() {
+      if (!currentCode) return;
+      try {
+        const res = await fetch('/quiz/results?code=' + currentCode);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const students = data.students || [];
+        const joined = students.length;
+        const submitted = students.filter(s => s.submitted).length;
+        const scores = students.filter(s => s.submitted).map(s => s.score);
+        const avg = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '—';
+
+        document.getElementById('countJoined').textContent = joined;
+        document.getElementById('countSubmitted').textContent = submitted;
+        document.getElementById('avgScore').textContent = avg;
+
+        const tbody = document.getElementById('resultsBody');
+        if (students.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">Chưa có học viên nào</td></tr>';
+          return;
+        }
+
+        const rankEmoji = ['🥇', '🥈', '🥉'];
+        tbody.innerHTML = students.map((s, i) => {
+          const rank = rankEmoji[i] || (i + 1);
+          const pct = Math.round((s.score / data.total_steps) * 100);
+          const barColor = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-400';
+          return `
+            <tr class="hover:bg-gray-50 transition">
+              <td class="px-4 py-3 font-semibold text-gray-600">${rank}</td>
+              <td class="px-4 py-3 font-medium text-gray-800">${escHtml(s.name)}</td>
+              <td class="px-4 py-3 text-center">
+                <div class="flex items-center gap-2 justify-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-2">
+                    <div class="${barColor} h-2 rounded-full" style="width:${pct}%"></div>
+                  </div>
+                  <span class="font-bold text-gray-700">${s.score}/${data.total_steps}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-center">
+                ${s.submitted
+                  ? '<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">✓ Đã nộp</span>'
+                  : '<span class="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-1 rounded-full">⏳ Chờ nộp</span>'
+                }
+              </td>
+            </tr>`;
+        }).join('');
+
+      } catch { /* silent fail */ }
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // Try to restore active session on load
+    (async () => {
+      try {
+        const res = await fetch('/quiz/active');
+        const data = await res.json();
+        if (data.active) {
+          currentCode = data.code;
+          document.getElementById('quizCode').textContent = data.code;
+          const quizUrl = window.location.origin + '/quiz-page?code=' + data.code;
+          document.getElementById('qrImage').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(quizUrl);
+          document.getElementById('sessionInfo').classList.remove('hidden');
+          document.getElementById('resultsCard').classList.remove('hidden');
+          startAutoRefresh();
+        }
+      } catch { /* no active session */ }
+    })();
+  </script>
+</body>
+</html>
