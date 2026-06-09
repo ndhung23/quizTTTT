@@ -1,41 +1,33 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.pool import NullPool
-from app.config import DATABASE_URL
+from flask_sqlalchemy import SQLAlchemy
 
-# Fix "postgres://" → "postgresql://"
-_url = (DATABASE_URL or "sqlite:///./quiz.db").strip()
-if _url.startswith("postgres://"):
-    _url = _url.replace("postgres://", "postgresql://", 1)
-
-_is_sqlite = _url.startswith("sqlite")
-
-if _is_sqlite:
-    engine = create_engine(_url, connect_args={"check_same_thread": False})
-else:
-    # Supabase / PostgreSQL
-    # NullPool: mỗi request mở/đóng connection riêng — phù hợp Supabase pooler
-    engine = create_engine(
-        _url,
-        poolclass=NullPool,
-        connect_args={
-            "sslmode": "require",
-            "connect_timeout": 10,
-            "keepalives": 1,
-            "keepalives_idle": 30,
-            "keepalives_interval": 10,
-            "keepalives_count": 5,
-        },
-    )
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+db = SQLAlchemy()
 
 
-def get_db():
-    db = SessionLocal()
+def init_db(app):
+    """Attach SQLAlchemy to the Flask app and create tables."""
+    db.init_app(app)
+    with app.app_context():
+        from app.models import user, student, session  # noqa: F401 – register models
+        db.create_all()
+        _seed_users()
+
+
+def _seed_users():
+    """Insert default users if the users table is empty."""
+    from app.models.user import User
     try:
-        yield db
-    finally:
-        db.close()
+        if User.query.count() == 0:
+            seed = [
+                User(username="admin",   password="123", role="admin"),
+                User(username="hv90122", password="123", role="teacher"),
+                User(username="hv10921", password="123", role="teacher"),
+            ]
+            db.session.add_all(seed)
+            db.session.commit()
+            print("✅ Seeded 3 default users")
+        else:
+            print("ℹ️  Users already exist – skip seed")
+    except Exception as e:
+        db.session.rollback()
+        print(f"⚠️  Seed warning: {e}")

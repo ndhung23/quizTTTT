@@ -1,11 +1,10 @@
-from sqlalchemy import Column, Integer, String
-from app.db.database import Base
+from app.db.database import db
 
 
-class User(Base):
+class User(db.Model):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, nullable=False, index=True)
-    password = Column(String, nullable=False)          # plain-text hoặc hashed
-    role = Column(String, nullable=False, default="teacher")  # "admin" | "teacher"
+    id       = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    password = db.Column(db.String(128), nullable=False)
+    role     = db.Column(db.String(20), nullable=False, default="teacher")  # "admin" | "teacher"

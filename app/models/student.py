@@ -1,12 +1,11 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, JSON
-from app.db.database import Base
+from app.db.database import db
 
 
-class Student(Base):
+class Student(db.Model):
     __tablename__ = "students"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    score = Column(Integer, default=0)
-    answer_order = Column(JSON, nullable=True)   # list of step numbers student submitted
-    session_id = Column(Integer, ForeignKey("quiz_sessions.id"), nullable=False)
+    id           = db.Column(db.Integer, primary_key=True)
+    name         = db.Column(db.String(100), nullable=False)
+    score        = db.Column(db.Integer, default=0)
+    answer_order = db.Column(db.JSON, nullable=True)
+    session_id   = db.Column(db.Integer, db.ForeignKey("quiz_sessions.id"), nullable=False)

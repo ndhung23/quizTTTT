@@ -1,10 +1,9 @@
-from sqlalchemy import Column, Integer, String, Boolean
-from app.db.database import Base
+from app.db.database import db
 
 
-class QuizSession(Base):
+class QuizSession(db.Model):
     __tablename__ = "quiz_sessions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    code = Column(String(10), unique=True, nullable=False)
-    is_active = Column(Boolean, default=True)
+    id        = db.Column(db.Integer, primary_key=True)
+    code      = db.Column(db.String(10), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
