@@ -2,568 +2,524 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>DENSO Quiz – Làm bài</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .drag-item {
+    /* ── Card ──────────────────────────────────────────── */
+    .card {
       cursor: grab;
-      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
-      touch-action: none;
       user-select: none;
+      touch-action: none;
+      transition: box-shadow .15s, opacity .15s, transform .1s;
+      position: relative;
     }
-    .drag-item:active { cursor: grabbing; }
-    .drag-item.dragging {
-      opacity: 0.4;
-      transform: scale(0.97);
-    }
-    .drop-zone {
-      transition: background 0.15s, border-color 0.15s;
-      min-height: 80px;
-    }
-    .drop-zone.drag-over {
-      background: #dbeafe;
-      border-color: #3b82f6;
-    }
-    .img-card {
-      width: 100%;
-      aspect-ratio: 4/3;
-      object-fit: cover;
-      border-radius: 0.5rem;
-      pointer-events: none;
-    }
-    /* Touch drag ghost */
-    .touch-ghost {
+    .card:active  { cursor: grabbing; }
+    .card.is-dragging { opacity: .35; transform: scale(.96); }
+
+    /* ── Floating ghost while dragging ──────────────────── */
+    #dragGhost {
       position: fixed;
       pointer-events: none;
       z-index: 9999;
-      opacity: 0.85;
-      transform: scale(1.05);
-      border-radius: 0.75rem;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      opacity: .9;
+      transform: rotate(2deg) scale(1.06);
+      box-shadow: 0 24px 48px rgba(0,0,0,.45);
+      border-radius: .75rem;
+      overflow: hidden;
+      display: none;
     }
+
+    /* ── Drop slot ──────────────────────────────────────── */
+    .slot {
+      transition: background .15s, border-color .15s, transform .1s;
+      min-height: 90px;
+    }
+    .slot.over {
+      background: #dbeafe !important;
+      border-color: #3b82f6 !important;
+      transform: scale(1.02);
+    }
+    .slot .placeholder {
+      pointer-events: none;
+    }
+
+    /* Scrollable source row */
+    #sourceRow {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    #sourceRow::-webkit-scrollbar { height: 4px; }
+    #sourceRow::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-indigo-900 text-white">
+<body class="min-h-screen bg-gradient-to-b from-slate-900 to-blue-950 text-white select-none">
 
-  <!-- ════════════════════════════════════════
-       STEP 1 – JOIN SCREEN
-  ════════════════════════════════════════ -->
-  <div id="joinScreen" class="min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white text-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8">
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 1 – JOIN
+══════════════════════════════════════════════════════════ -->
+<div id="screenJoin" class="min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white text-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-8">
 
-      <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-full mb-4">
-          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-          </svg>
-        </div>
-        <h1 class="text-2xl font-bold">DENSO Quiz</h1>
-        <p class="text-gray-500 text-sm mt-1">Sắp xếp các bước thao tác đúng thứ tự</p>
+    <div class="text-center mb-7">
+      <div class="inline-flex items-center justify-center w-14 h-14 bg-indigo-600 rounded-2xl mb-3 shadow">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+               M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      <h1 class="text-xl font-black text-gray-900">DENSO Quiz</h1>
+      <p class="text-gray-500 text-sm mt-1">Sắp xếp các bước thao tác đúng thứ tự</p>
+    </div>
+
+    <form id="joinForm" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Mã phòng</label>
+        <input id="codeInput" type="text" maxlength="10" required autocomplete="off"
+          placeholder="Nhập mã 6 chữ số"
+          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500
+                 text-center text-2xl font-black tracking-[.3em] uppercase transition"
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">Tên của bạn</label>
+        <input id="nameInput" type="text" maxlength="50" required
+          placeholder="Nguyễn Văn A"
+          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 transition"
+        />
       </div>
 
-      <form id="joinForm" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Mã phòng</label>
-          <input type="text" id="codeInput" maxlength="10" required
-            placeholder="Nhập mã 6 chữ số"
-            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center text-2xl font-bold tracking-widest uppercase transition"
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Tên của bạn</label>
-          <input type="text" id="nameInput" required maxlength="50"
-            placeholder="Nguyễn Văn A"
-            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-          />
-        </div>
+      <div id="joinError" class="hidden bg-red-50 border border-red-300 text-red-600 text-sm rounded-xl px-4 py-3 text-center"></div>
 
-        <div id="joinError" class="hidden bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3"></div>
+      <button type="submit" id="joinBtn"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-3.5 rounded-xl
+               transition flex items-center justify-center gap-2 text-base">
+        <span>Vào làm bài</span>
+        <svg id="joinSpinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+</div>
 
-        <button type="submit" id="joinBtn"
-          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-          <span>Vào làm bài</span>
-          <svg id="joinSpinner" class="hidden w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-          </svg>
-        </button>
-      </form>
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 2 – QUIZ  (hàng ngang ảnh nguồn → kéo xuống slot)
+══════════════════════════════════════════════════════════ -->
+<div id="screenQuiz" class="hidden flex flex-col min-h-screen">
+
+  <!-- Top bar -->
+  <div class="bg-slate-900/80 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between">
+    <div>
+      <p class="font-black text-base leading-tight">Sắp xếp đúng thứ tự</p>
+      <p class="text-blue-300 text-xs mt-0.5">Kéo ảnh từ <span class="font-semibold text-yellow-300">hàng trên</span> xuống ô bên dưới</p>
+    </div>
+    <div class="text-right">
+      <p class="text-xs text-slate-400">Học viên</p>
+      <p id="displayName" class="font-bold text-sm text-white"></p>
     </div>
   </div>
 
-  <!-- ════════════════════════════════════════
-       STEP 2 – QUIZ SCREEN (Drag & Drop)
-  ════════════════════════════════════════ -->
-  <div id="quizScreen" class="hidden min-h-screen p-4 pb-32">
+  <div class="flex-1 overflow-y-auto p-3 space-y-4 pb-24">
 
-    <!-- Header -->
-    <div class="max-w-6xl mx-auto mb-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold">Sắp xếp các bước thao tác</h1>
-          <p class="text-blue-300 text-sm mt-1">Kéo và thả hình ảnh vào đúng vị trí (1 → 7)</p>
-        </div>
-        <div class="text-right">
-          <p class="text-sm text-gray-400">Học viên</p>
-          <p id="displayName" class="font-bold text-lg"></p>
-        </div>
+    <!-- SOURCE ROW: 7 ảnh xếp ngang, cuộn ngang nếu tràn -->
+    <div class="bg-white/10 backdrop-blur rounded-2xl p-3">
+      <p class="text-xs font-semibold text-blue-200 uppercase tracking-wide mb-2 px-1">
+        📦 Kho ảnh – kéo xuống ô bên dưới
+      </p>
+      <div id="sourceRow" class="flex gap-3 pb-1">
+        <!-- cards injected by JS -->
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-      <!-- LEFT: Source images (shuffled) -->
-      <div class="bg-white/10 backdrop-blur rounded-2xl p-5">
-        <h2 class="font-semibold text-blue-200 mb-4 flex items-center gap-2">
-          <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">Ảnh</span>
-          Các bước (kéo sang phải)
-        </h2>
-        <div id="sourceGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-          <!-- populated by JS -->
-        </div>
-      </div>
-
-      <!-- RIGHT: Drop zones (ordered slots 1-7) -->
-      <div class="bg-white/10 backdrop-blur rounded-2xl p-5">
-        <h2 class="font-semibold text-blue-200 mb-4 flex items-center gap-2">
-          <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">Thứ tự</span>
-          Vị trí thứ tự (1 → 7)
-        </h2>
-        <div id="dropZones" class="space-y-3">
-          <!-- populated by JS -->
-        </div>
+    <!-- SLOTS: 7 ô xếp 2 cột (col-span-1 + col-span-1, slot 7 ở giữa) -->
+    <div class="bg-white/10 backdrop-blur rounded-2xl p-3">
+      <p class="text-xs font-semibold text-green-200 uppercase tracking-wide mb-2 px-1">
+        📋 Thứ tự đúng – thả ảnh vào đây (1 → 7)
+      </p>
+      <div id="slotGrid" class="grid grid-cols-2 gap-3">
+        <!-- slots injected by JS -->
       </div>
     </div>
 
-    <!-- Submit bar (fixed bottom) -->
-    <div class="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur border-t border-white/10 p-4">
-      <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
-        <p class="text-sm text-gray-400" id="progressText">Chưa sắp xếp bước nào</p>
-        <button id="submitBtn" onclick="submitQuiz()"
-          class="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-xl transition flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-          </svg>
-          Hoàn thành &amp; Nộp bài
-        </button>
-      </div>
-    </div>
   </div>
 
-  <!-- ════════════════════════════════════════
-       STEP 3 – RESULT SCREEN
-  ════════════════════════════════════════ -->
-  <div id="resultScreen" class="hidden min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white text-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-8 text-center">
-
-      <div id="resultIcon" class="text-7xl mb-4">🎉</div>
-      <h2 class="text-3xl font-black mb-2" id="resultTitle">Kết quả</h2>
-      <p class="text-gray-500 mb-6" id="resultSub"></p>
-
-      <!-- Score circle -->
-      <div class="inline-flex items-center justify-center w-36 h-36 rounded-full border-8 border-blue-500 mb-6">
-        <div>
-          <p id="scoreDisplay" class="text-4xl font-black text-blue-600"></p>
-          <p class="text-xs text-gray-500">điểm đúng</p>
-        </div>
-      </div>
-
-      <!-- Answer comparison -->
-      <div class="bg-gray-50 rounded-xl p-4 mb-6 text-left">
-        <p class="font-semibold text-gray-700 mb-3 text-sm">Chi tiết từng bước:</p>
-        <div id="answerDetail" class="space-y-2 text-sm"></div>
-      </div>
-
-      <div class="text-sm text-gray-500">Kết quả đã được ghi nhận. Cảm ơn bạn! 👍</div>
+  <!-- Fixed bottom bar -->
+  <div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-white/10 px-4 py-3">
+    <div class="flex items-center justify-between gap-3 max-w-xl mx-auto">
+      <p id="progressText" class="text-sm text-slate-300 truncate"></p>
+      <button id="submitBtn" onclick="submitQuiz()"
+        class="shrink-0 bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-40
+               disabled:cursor-not-allowed text-white font-bold px-6 py-2.5 rounded-xl transition text-sm
+               flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Nộp bài
+      </button>
     </div>
   </div>
+</div>
 
-  <script>
-  // ─────────────────────────────────────────────────────────────
-  //  State
-  // ─────────────────────────────────────────────────────────────
-  const TOTAL = 7;
-  const STEP_LABELS = [
-    'Đeo đồ bảo hộ',
-    'Đặt Terminal SA lên khuôn',
-    'Lấy sản phẩm từ khuôn, đặt vào băng tải',
-    'Set Terminal S/A vào khuôn',
-    'Lấy terminal ngắn từ khay',
-    'Set terminal ngắn vào khuôn',
-    'Lấy terminal dài từ khay',
-  ];
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN 3 – RESULT
+══════════════════════════════════════════════════════════ -->
+<div id="screenResult" class="hidden min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white text-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-7 text-center">
+    <div id="resultEmoji" class="text-6xl mb-3">🎉</div>
+    <h2 id="resultTitle" class="text-3xl font-black mb-1"></h2>
+    <p id="resultSub"    class="text-gray-500 text-sm mb-5"></p>
 
-  let studentId = null;
-  let studentName = '';
-  // slots[position 0-6] = step number (1-7) or null
-  let slots = Array(TOTAL).fill(null);
-  // source items remaining (step numbers not yet placed)
-  let unplaced = [];
+    <div class="inline-flex items-center justify-center w-32 h-32 rounded-full border-8 border-indigo-500 mb-5">
+      <div>
+        <p id="scoreDisplay" class="text-4xl font-black text-indigo-600"></p>
+        <p class="text-xs text-gray-400">đúng</p>
+      </div>
+    </div>
 
-  // ─────────────────────────────────────────────────────────────
-  //  Pre-fill code from URL query
-  // ─────────────────────────────────────────────────────────────
-  const urlParams = new URLSearchParams(window.location.search);
-  const codeFromUrl = urlParams.get('code');
-  if (codeFromUrl) {
-    document.getElementById('codeInput').value = codeFromUrl.toUpperCase();
-  }
+    <div class="bg-gray-50 rounded-xl p-4 mb-5 text-left space-y-2">
+      <p class="text-xs font-bold text-gray-600 uppercase tracking-wide mb-3">Chi tiết từng bước</p>
+      <div id="answerDetail"></div>
+    </div>
+    <p class="text-xs text-gray-400">Kết quả đã ghi nhận. Cảm ơn bạn! 👍</p>
+  </div>
+</div>
 
-  // ─────────────────────────────────────────────────────────────
-  //  JOIN
-  // ─────────────────────────────────────────────────────────────
-  document.getElementById('joinForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('joinBtn');
-    const spinner = document.getElementById('joinSpinner');
-    const errEl = document.getElementById('joinError');
+<!-- Floating drag ghost (shared) -->
+<div id="dragGhost"></div>
 
-    btn.disabled = true;
-    spinner.classList.remove('hidden');
-    errEl.classList.add('hidden');
+<script>
+// ═══════════════════════════════════════════════════════
+//  Constants & State
+// ═══════════════════════════════════════════════════════
+const TOTAL  = 7;
+let studentId   = null;
+let studentName = '';
+let slots       = Array(TOTAL).fill(null);   // slots[0..6] = step# | null
+let unplaced    = [];                         // step numbers not yet placed
 
-    const code = document.getElementById('codeInput').value.trim().toUpperCase();
-    const name = document.getElementById('nameInput').value.trim();
+// ═══════════════════════════════════════════════════════
+//  URL pre-fill
+// ═══════════════════════════════════════════════════════
+const _code = new URLSearchParams(location.search).get('code');
+if (_code) document.getElementById('codeInput').value = _code.toUpperCase();
 
-    try {
-      const res = await fetch('/quiz/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, code }),
-      });
-      const data = await res.json();
+// ═══════════════════════════════════════════════════════
+//  JOIN
+// ═══════════════════════════════════════════════════════
+document.getElementById('joinForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn     = document.getElementById('joinBtn');
+  const spinner = document.getElementById('joinSpinner');
+  const errEl   = document.getElementById('joinError');
+  btn.disabled  = true;
+  spinner.classList.remove('hidden');
+  errEl.classList.add('hidden');
 
-      if (!res.ok) {
-        errEl.textContent = data.detail || 'Không thể vào phòng. Kiểm tra lại mã.';
-        errEl.classList.remove('hidden');
-        return;
-      }
+  const code = document.getElementById('codeInput').value.trim().toUpperCase();
+  const name = document.getElementById('nameInput').value.trim();
 
-      studentId = data.student_id;
-      studentName = name;
-      document.getElementById('displayName').textContent = name;
-      showQuizScreen();
-
-    } catch {
-      errEl.textContent = 'Lỗi kết nối server.';
-      errEl.classList.remove('hidden');
-    } finally {
-      btn.disabled = false;
-      spinner.classList.add('hidden');
-    }
-  });
-
-  // ─────────────────────────────────────────────────────────────
-  //  BUILD QUIZ UI
-  // ─────────────────────────────────────────────────────────────
-  function showQuizScreen() {
-    document.getElementById('joinScreen').classList.add('hidden');
-    document.getElementById('quizScreen').classList.remove('hidden');
-
-    // Shuffle step numbers 1-7
-    unplaced = shuffleArray([1, 2, 3, 4, 5, 6, 7]);
-    renderSource();
-    renderDropZones();
-    updateProgress();
-  }
-
-  function shuffleArray(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }
-
-  function renderSource() {
-    const grid = document.getElementById('sourceGrid');
-    grid.innerHTML = '';
-    unplaced.forEach(step => {
-      grid.appendChild(makeCard(step, 'source'));
+  try {
+    const res  = await fetch('/quiz/join', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, code })
     });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.detail || 'Mã không hợp lệ'; errEl.classList.remove('hidden'); return; }
+    studentId   = data.student_id;
+    studentName = name;
+    document.getElementById('displayName').textContent = name;
+    initQuiz();
+  } catch {
+    errEl.textContent = 'Lỗi kết nối server.';
+    errEl.classList.remove('hidden');
+  } finally { btn.disabled = false; spinner.classList.add('hidden'); }
+});
+
+// ═══════════════════════════════════════════════════════
+//  INIT QUIZ
+// ═══════════════════════════════════════════════════════
+function initQuiz() {
+  document.getElementById('screenJoin').classList.add('hidden');
+  document.getElementById('screenQuiz').classList.remove('hidden');
+  slots    = Array(TOTAL).fill(null);
+  unplaced = shuffle([1,2,3,4,5,6,7]);
+  render();
+}
+
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [b[i],b[j]] = [b[j],b[i]];
   }
+  return b;
+}
 
-  function makeCard(step, origin) {
-    const div = document.createElement('div');
-    div.className = 'drag-item bg-white rounded-xl shadow-lg overflow-hidden border-2 border-transparent hover:border-blue-400';
-    div.dataset.step = step;
-    div.dataset.origin = origin;
-    div.draggable = true;
+// ═══════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════
+function render() {
+  renderSource();
+  renderSlots();
+  renderProgress();
+}
 
-    div.innerHTML = `
-      <img src="/images/${step}.png" alt="Bước ${step}" class="img-card" />
-      <div class="bg-white px-2 py-1 text-center">
-        <span class="text-xs font-semibold text-gray-500">Bước ?</span>
-      </div>
-    `;
-
-    // Desktop drag events
-    div.addEventListener('dragstart', onDragStart);
-    div.addEventListener('dragend', onDragEnd);
-
-    // Mobile touch events
-    div.addEventListener('touchstart', onTouchStart, { passive: false });
-    div.addEventListener('touchmove', onTouchMove, { passive: false });
-    div.addEventListener('touchend', onTouchEnd);
-
-    return div;
+function renderSource() {
+  const row = document.getElementById('sourceRow');
+  row.innerHTML = '';
+  if (unplaced.length === 0) {
+    row.innerHTML = '<p class="text-white/40 text-sm py-4 px-2 italic">Đã dùng hết ảnh ✅</p>';
+    return;
   }
+  unplaced.forEach(step => row.appendChild(makeCard(step, 'source')));
+}
 
-  function renderDropZones() {
-    const container = document.getElementById('dropZones');
-    container.innerHTML = '';
-    for (let i = 0; i < TOTAL; i++) {
-      container.appendChild(makeDropZone(i));
-    }
-  }
-
-  function makeDropZone(index) {
+function renderSlots() {
+  const grid = document.getElementById('slotGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < TOTAL; i++) {
     const zone = document.createElement('div');
-    zone.className = 'drop-zone border-2 border-dashed border-white/30 rounded-xl p-2 flex items-center gap-3 min-h-[80px]';
-    zone.dataset.slot = index;
+    // slot 6 (index 6) spans 2 cols to center it
+    zone.className = 'slot border-2 border-dashed border-white/20 rounded-xl p-2 flex items-center gap-2'
+      + (i === 6 ? ' col-span-2 max-w-[50%] mx-auto w-full' : '');
+    zone.dataset.slot = i;
 
-    const label = document.createElement('div');
-    label.className = 'flex-shrink-0 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm';
-    label.textContent = index + 1;
-    zone.appendChild(label);
+    // Number badge
+    const badge = document.createElement('div');
+    badge.className = 'shrink-0 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xs';
+    badge.textContent = i + 1;
+    zone.appendChild(badge);
 
-    const content = document.createElement('div');
-    content.className = 'flex-1';
-    content.id = `slot-content-${index}`;
-
-    if (slots[index] !== null) {
-      content.appendChild(makeCard(slots[index], `slot-${index}`));
+    const body = document.createElement('div');
+    body.className = 'flex-1 min-w-0';
+    if (slots[i] !== null) {
+      body.appendChild(makeCard(slots[i], 'slot-' + i));
     } else {
-      content.innerHTML = `<p class="text-white/40 text-sm italic">Kéo ảnh vào đây...</p>`;
+      body.innerHTML = '<p class="placeholder text-white/30 text-xs italic text-center py-4">thả vào đây</p>';
     }
-    zone.appendChild(content);
+    zone.appendChild(body);
 
-    // Drag over / drop
+    // Drop listeners
     zone.addEventListener('dragover', onDragOver);
     zone.addEventListener('dragleave', onDragLeave);
     zone.addEventListener('drop', onDrop);
+    grid.appendChild(zone);
+  }
+}
 
-    return zone;
+function renderProgress() {
+  const n = slots.filter(s => s !== null).length;
+  document.getElementById('progressText').textContent =
+    n === TOTAL ? '✅ Đủ 7 bước – bấm Nộp bài!'
+                : `Đã xếp ${n}/${TOTAL} bước`;
+  document.getElementById('submitBtn').disabled = n !== TOTAL;
+}
+
+// ═══════════════════════════════════════════════════════
+//  MAKE CARD
+// ═══════════════════════════════════════════════════════
+function makeCard(step, origin) {
+  const wrap = document.createElement('div');
+  wrap.className = 'card bg-white rounded-xl overflow-hidden shadow-md border-2 border-transparent hover:border-indigo-400';
+  wrap.style.cssText = 'width:90px; flex-shrink:0';
+  wrap.dataset.step   = step;
+  wrap.dataset.origin = origin;
+  wrap.draggable      = true;
+
+  wrap.innerHTML = `
+    <img src="/images/${step}.png" alt="Bước ${step}"
+         style="width:100%;aspect-ratio:4/3;object-fit:cover;pointer-events:none;display:block" />
+    <div class="bg-gray-50 py-1 text-center">
+      <span class="text-[10px] font-semibold text-gray-400">Bước ?</span>
+    </div>`;
+
+  // Desktop
+  wrap.addEventListener('dragstart', onDragStart);
+  wrap.addEventListener('dragend',   onDragEnd);
+  // Touch
+  wrap.addEventListener('touchstart', onTouchStart, { passive: false });
+  wrap.addEventListener('touchmove',  onTouchMove,  { passive: false });
+  wrap.addEventListener('touchend',   onTouchEnd);
+  return wrap;
+}
+
+// ═══════════════════════════════════════════════════════
+//  DRAG STATE
+// ═══════════════════════════════════════════════════════
+let dStep = null, dFrom = null, dEl = null;
+
+// ── Desktop drag ──────────────────────────────────────
+function onDragStart(e) {
+  dStep = +this.dataset.step;
+  dFrom = this.dataset.origin;
+  dEl   = this;
+  this.classList.add('is-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dStep);
+}
+function onDragEnd() { this.classList.remove('is-dragging'); }
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  this.classList.add('over');
+}
+function onDragLeave(e) {
+  // only remove if we actually left the zone (not just entered a child)
+  if (!this.contains(e.relatedTarget)) this.classList.remove('over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  this.classList.remove('over');
+  const idx = +this.dataset.slot;
+  if (!isNaN(idx)) place(dStep, dFrom, idx);
+}
+
+// ── Touch drag ────────────────────────────────────────
+const ghost = document.getElementById('dragGhost');
+let tStep = null, tFrom = null, tEl = null;
+
+function onTouchStart(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  tStep = +this.dataset.step;
+  tFrom = this.dataset.origin;
+  tEl   = this;
+
+  // Build ghost
+  ghost.innerHTML = '';
+  const clone = this.cloneNode(true);
+  clone.style.cssText = '';
+  ghost.appendChild(clone);
+  ghost.style.width  = this.offsetWidth + 'px';
+  ghost.style.display = 'block';
+  moveGhost(t.clientX, t.clientY);
+
+  this.classList.add('is-dragging');
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  moveGhost(t.clientX, t.clientY);
+
+  // highlight slot under finger
+  ghost.style.display = 'none';
+  const el   = document.elementFromPoint(t.clientX, t.clientY);
+  ghost.style.display = 'block';
+  document.querySelectorAll('.slot').forEach(z => z.classList.remove('over'));
+  const zone = el && el.closest('.slot');
+  if (zone) zone.classList.add('over');
+}
+
+function onTouchEnd(e) {
+  const t = e.changedTouches[0];
+  ghost.style.display = 'none';
+  if (tEl) tEl.classList.remove('is-dragging');
+  document.querySelectorAll('.slot').forEach(z => z.classList.remove('over'));
+
+  ghost.style.display = 'none';
+  const el   = document.elementFromPoint(t.clientX, t.clientY);
+  ghost.style.display = 'none';
+  const zone = el && el.closest('.slot');
+  if (zone) {
+    const idx = +zone.dataset.slot;
+    if (!isNaN(idx)) place(tStep, tFrom, idx);
   }
 
-  function updateProgress() {
-    const filled = slots.filter(s => s !== null).length;
-    const pct = Math.round((filled / TOTAL) * 100);
-    document.getElementById('progressText').textContent =
-      filled === TOTAL
-        ? '✅ Đã sắp xếp đủ 7 bước – bấm Hoàn thành để nộp!'
-        : `Đã sắp xếp ${filled}/${TOTAL} bước (${pct}%)`;
+  tStep = tFrom = tEl = null;
+}
+
+function moveGhost(cx, cy) {
+  ghost.style.left = (cx - ghost.offsetWidth / 2)  + 'px';
+  ghost.style.top  = (cy - ghost.offsetHeight / 2) + 'px';
+}
+
+// ═══════════════════════════════════════════════════════
+//  PLACE LOGIC
+// ═══════════════════════════════════════════════════════
+function place(step, from, targetIdx) {
+  const displaced = slots[targetIdx];
+
+  // Remove from origin
+  if (from === 'source') {
+    unplaced = unplaced.filter(s => s !== step);
+  } else if (from.startsWith('slot-')) {
+    slots[+from.split('-')[1]] = null;
   }
 
-  // ─────────────────────────────────────────────────────────────
-  //  DESKTOP DRAG & DROP
-  // ─────────────────────────────────────────────────────────────
-  let draggedStep = null;
-  let draggedFrom = null;   // 'source' or 'slot-N'
+  // Set target
+  slots[targetIdx] = step;
 
-  function onDragStart(e) {
-    draggedStep = parseInt(this.dataset.step);
-    draggedFrom = this.dataset.origin;
-    this.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', draggedStep);
+  // Push displaced back to source (if different)
+  if (displaced !== null && displaced !== step) unplaced.push(displaced);
+
+  render();
+}
+
+// ═══════════════════════════════════════════════════════
+//  SUBMIT
+// ═══════════════════════════════════════════════════════
+async function submitQuiz() {
+  if (slots.some(s => s === null)) {
+    alert('Chưa đủ 7 bước!');
+    return;
   }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg> Đang nộp…';
 
-  function onDragEnd(e) {
-    this.classList.remove('dragging');
-  }
-
-  function onDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    this.classList.add('drag-over');
-  }
-
-  function onDragLeave(e) {
-    this.classList.remove('drag-over');
-  }
-
-  function onDrop(e) {
-    e.preventDefault();
-    this.classList.remove('drag-over');
-    const targetSlot = parseInt(this.dataset.slot);
-    if (isNaN(targetSlot)) return;
-    placeStep(draggedStep, draggedFrom, targetSlot);
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  //  MOBILE TOUCH DRAG
-  // ─────────────────────────────────────────────────────────────
-  let touchGhost = null;
-  let touchDraggedEl = null;
-  let touchDraggedStep = null;
-  let touchDraggedFrom = null;
-
-  function onTouchStart(e) {
-    e.preventDefault();
-    const touch = e.touches[0];
-    touchDraggedEl = this;
-    touchDraggedStep = parseInt(this.dataset.step);
-    touchDraggedFrom = this.dataset.origin;
-
-    // Create ghost
-    touchGhost = this.cloneNode(true);
-    touchGhost.className = 'touch-ghost bg-white rounded-xl shadow-2xl overflow-hidden';
-    touchGhost.style.width = this.offsetWidth + 'px';
-    touchGhost.style.left = (touch.clientX - this.offsetWidth / 2) + 'px';
-    touchGhost.style.top = (touch.clientY - this.offsetHeight / 2) + 'px';
-    document.body.appendChild(touchGhost);
-
-    this.style.opacity = '0.3';
-  }
-
-  function onTouchMove(e) {
-    e.preventDefault();
-    const touch = e.touches[0];
-    if (touchGhost) {
-      touchGhost.style.left = (touch.clientX - touchGhost.offsetWidth / 2) + 'px';
-      touchGhost.style.top = (touch.clientY - touchGhost.offsetHeight / 2) + 'px';
-    }
-    // Highlight drop zone under finger
-    document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const zone = el && el.closest('.drop-zone');
-    if (zone) zone.classList.add('drag-over');
-  }
-
-  function onTouchEnd(e) {
-    const touch = e.changedTouches[0];
-    if (touchGhost) {
-      touchGhost.remove();
-      touchGhost = null;
-    }
-    if (touchDraggedEl) touchDraggedEl.style.opacity = '';
-
-    document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
-
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const zone = el && el.closest('.drop-zone');
-    if (zone) {
-      const targetSlot = parseInt(zone.dataset.slot);
-      if (!isNaN(targetSlot)) {
-        placeStep(touchDraggedStep, touchDraggedFrom, targetSlot);
-      }
-    }
-
-    touchDraggedEl = null;
-    touchDraggedStep = null;
-    touchDraggedFrom = null;
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  //  CORE: place a step into a slot
-  // ─────────────────────────────────────────────────────────────
-  function placeStep(step, from, targetSlot) {
-    // If target slot is occupied, swap or return to source
-    const displaced = slots[targetSlot];
-
-    // Remove step from its origin
-    if (from === 'source') {
-      unplaced = unplaced.filter(s => s !== step);
-    } else if (from.startsWith('slot-')) {
-      const fromSlot = parseInt(from.split('-')[1]);
-      slots[fromSlot] = null;
-    }
-
-    // Place step into target slot
-    slots[targetSlot] = step;
-
-    // If displaced, send back to source
-    if (displaced !== null && displaced !== step) {
-      unplaced.push(displaced);
-    }
-
-    // Re-render
-    renderSource();
-    renderDropZones();
-    updateProgress();
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  //  SUBMIT
-  // ─────────────────────────────────────────────────────────────
-  async function submitQuiz() {
-    if (slots.some(s => s === null)) {
-      alert('Bạn chưa sắp xếp đủ 7 bước! Hãy kéo tất cả ảnh vào vị trí.');
-      return;
-    }
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    btn.textContent = 'Đang nộp...';
-
-    try {
-      const res = await fetch('/quiz/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          student_id: studentId,
-          answer_order: slots,
-        }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.detail || 'Lỗi nộp bài');
-        btn.disabled = false;
-        btn.textContent = 'Hoàn thành & Nộp bài';
-        return;
-      }
-
-      showResult(data);
-
-    } catch {
-      alert('Lỗi kết nối. Thử lại.');
-      btn.disabled = false;
-      btn.textContent = 'Hoàn thành & Nộp bài';
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  //  RESULT SCREEN
-  // ─────────────────────────────────────────────────────────────
-  function showResult(data) {
-    document.getElementById('quizScreen').classList.add('hidden');
-    document.getElementById('resultScreen').classList.remove('hidden');
-
-    const pct = Math.round((data.score / data.total) * 100);
-    const icon = pct === 100 ? '🏆' : pct >= 70 ? '🎉' : pct >= 40 ? '👍' : '💪';
-
-    document.getElementById('resultIcon').textContent = icon;
-    document.getElementById('resultTitle').textContent =
-      pct === 100 ? 'Hoàn hảo!' : pct >= 70 ? 'Xuất sắc!' : pct >= 40 ? 'Khá tốt!' : 'Cố gắng hơn nhé!';
-    document.getElementById('resultSub').textContent =
-      `${studentName} – ${data.score}/${data.total} bước đúng (${pct}%)`;
-    document.getElementById('scoreDisplay').textContent = `${data.score}/${data.total}`;
-
-    // Detail comparison
-    const detail = document.getElementById('answerDetail');
-    detail.innerHTML = '';
-    slots.forEach((step, i) => {
-      const correct = data.correct_order[i];
-      const isRight = step === correct;
-      const row = document.createElement('div');
-      row.className = `flex items-center gap-3 p-2 rounded-lg ${isRight ? 'bg-green-50' : 'bg-red-50'}`;
-      row.innerHTML = `
-        <span class="text-lg">${isRight ? '✅' : '❌'}</span>
-        <div class="flex-1">
-          <span class="font-semibold text-gray-700">Vị trí ${i + 1}:</span>
-          <span class="${isRight ? 'text-green-700' : 'text-red-600'} ml-1">
-            Bạn chọn Bước ${step}
-            ${!isRight ? `<span class="text-gray-400">(đúng: Bước ${correct})</span>` : ''}
-          </span>
-        </div>
-      `;
-      detail.appendChild(row);
+  try {
+    const res  = await fetch('/quiz/submit', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ student_id: studentId, answer_order: slots })
     });
+    const data = await res.json();
+    if (!res.ok) { alert(data.detail || 'Lỗi nộp bài'); return; }
+    showResult(data);
+  } catch { alert('Lỗi kết nối.'); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Nộp bài';
   }
-  </script>
+}
+
+// ═══════════════════════════════════════════════════════
+//  RESULT
+// ═══════════════════════════════════════════════════════
+function showResult(data) {
+  document.getElementById('screenQuiz').classList.add('hidden');
+  document.getElementById('screenResult').classList.remove('hidden');
+
+  const pct  = Math.round(data.score / data.total * 100);
+  const emoji = pct===100?'🏆':pct>=70?'🎉':pct>=40?'👍':'💪';
+  const title = pct===100?'Hoàn hảo!':pct>=70?'Xuất sắc!':pct>=40?'Khá tốt!':'Cố gắng hơn!';
+
+  document.getElementById('resultEmoji').textContent  = emoji;
+  document.getElementById('resultTitle').textContent  = title;
+  document.getElementById('resultSub').textContent    = `${studentName} – ${data.score}/${data.total} đúng (${pct}%)`;
+  document.getElementById('scoreDisplay').textContent = `${data.score}/${data.total}`;
+
+  const detail = document.getElementById('answerDetail');
+  detail.innerHTML = '';
+  slots.forEach((step, i) => {
+    const ok   = step === data.correct_order[i];
+    const row  = document.createElement('div');
+    row.className = `flex items-center gap-2 p-2 rounded-lg text-sm ${ok?'bg-green-50':'bg-red-50'}`;
+    row.innerHTML  = `
+      <span>${ok?'✅':'❌'}</span>
+      <span class="font-semibold text-gray-700">Vị trí ${i+1}:</span>
+      <span class="${ok?'text-green-700':'text-red-600'}">
+        Bước ${step}
+        ${!ok?`<span class="text-gray-400 text-xs">(đúng: Bước ${data.correct_order[i]})</span>`:''}
+      </span>`;
+    detail.appendChild(row);
+  });
+}
+</script>
 </body>
 </html>

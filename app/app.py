@@ -1,17 +1,12 @@
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
+import os
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import auth, quiz
-from app.db.database import Base, engine
-import os
-
-# Auto-create all tables
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="DENSO Quiz System")
 
-# CORS - allows frontend fetch to work
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,29 +14,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files (images 1-7.png are at root, serve from there)
-# Images are in the project root - we expose them under /static
+# Serve step images (1.png – 7.png) from project root under /images/
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 app.mount("/images", StaticFiles(directory=ROOT_DIR), name="images")
 
-templates = Jinja2Templates(directory="app/templates")
-
-# Include routers
+# API routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(quiz.router, prefix="/quiz", tags=["quiz"])
 
+TEMPLATES = os.path.join(os.path.dirname(__file__), "templates")
 
-# ── Page routes ──────────────────────────────
+
+@app.on_event("startup")
+def startup():
+    """Create DB tables on startup — runs AFTER engine is created."""
+    from app.db.database import Base, engine
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ Database tables ready")
+    except Exception as e:
+        print(f"⚠️  DB init warning: {e}")
+
+
+# ── Page routes ──────────────────────────────────────────────────
 @app.get("/")
-def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
+def login_page():
+    return FileResponse(os.path.join(TEMPLATES, "login.html"))
 
 @app.get("/dashboard")
-def dashboard_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
-
+def dashboard_page():
+    return FileResponse(os.path.join(TEMPLATES, "dashboard.html"))
 
 @app.get("/quiz-page")
-def quiz_student_page(request: Request):
-    return templates.TemplateResponse("quiz.html", {"request": request})
+def quiz_student_page():
+    return FileResponse(os.path.join(TEMPLATES, "quiz.html"))
