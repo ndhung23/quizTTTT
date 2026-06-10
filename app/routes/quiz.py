@@ -8,7 +8,18 @@ from app.models.student import Student
 
 quiz_bp = Blueprint("quiz", __name__, url_prefix="/quiz")
 
-CORRECT_ORDER = [1, 2, 3, 4, 5, 6, 7]
+SUB_QUIZ_MAX_SCORES = {
+    "1": 5,
+    "2": 7,
+    "3": 5,
+    "4": 5,
+    "5": 9,
+    "6": 2,
+    "7": 4,
+    "8": 4,
+    "9": 5,
+    "10": 4
+}
 
 
 def gen_code(length: int = 6) -> str:
@@ -18,6 +29,11 @@ def gen_code(length: int = 6) -> str:
 # ─── POST /quiz/start ────────────────────────────────────────────
 @quiz_bp.post("/start")
 def start_quiz():
+    data = request.get_json(force=True, silent=True) or {}
+    quiz_type = data.get("quiz_type", "option1")
+    if quiz_type not in ["option1", "option2"]:
+        quiz_type = "option1"
+
     # Deactivate all previous sessions
     QuizSession.query.update({"is_active": False})
     db.session.commit()
@@ -26,11 +42,11 @@ def start_quiz():
     while QuizSession.query.filter_by(code=code).first():
         code = gen_code()
 
-    session = QuizSession(code=code, is_active=True)
+    session = QuizSession(code=code, is_active=True, quiz_type=quiz_type)
     db.session.add(session)
     db.session.commit()
 
-    return jsonify({"code": code, "session_id": session.id, "link": f"/quiz?code={code}"})
+    return jsonify({"code": code, "session_id": session.id, "link": f"/quiz-page?code={code}", "quiz_type": quiz_type})
 
 
 # ─── POST /quiz/join ─────────────────────────────────────────────
@@ -46,35 +62,79 @@ def join_quiz():
 
     existing = Student.query.filter_by(name=name, session_id=session.id).first()
     if existing:
-        return jsonify({"ok": True, "student_id": existing.id, "session_id": session.id, "message": "Tái kết nối"})
+        return jsonify({"ok": True, "student_id": existing.id, "session_id": session.id, "quiz_type": session.quiz_type, "message": "Tái kết nối"})
 
     student = Student(name=name, score=0, session_id=session.id)
     db.session.add(student)
     db.session.commit()
 
-    return jsonify({"ok": True, "student_id": student.id, "session_id": session.id, "message": "Tham gia thành công"})
+    return jsonify({"ok": True, "student_id": student.id, "session_id": session.id, "quiz_type": session.quiz_type, "message": "Tham gia thành công"})
 
 
 # ─── POST /quiz/submit ───────────────────────────────────────────
 @quiz_bp.post("/submit")
 def submit_quiz():
     data = request.get_json(force=True)
-    student_id   = data.get("student_id")
-    answer_order = data.get("answer_order", [])
+    student_id = data.get("student_id")
 
     student = Student.query.filter_by(id=student_id).first()
     if not student:
         abort(404, description="Không tìm thấy học viên")
 
-    score = sum(
-        1 for i, step in enumerate(answer_order)
-        if i < len(CORRECT_ORDER) and step == CORRECT_ORDER[i]
-    )
-    student.answer_order = answer_order
-    student.score = score
-    db.session.commit()
+    session = QuizSession.query.filter_by(id=student.session_id).first()
+    if not session:
+        abort(404, description="Không tìm thấy phòng thi")
 
-    return jsonify({"done": True, "score": score, "total": len(CORRECT_ORDER), "correct_order": CORRECT_ORDER})
+    if session.quiz_type == "option2":
+        sub_quiz_id = str(data.get("sub_quiz_id"))
+        sub_score = data.get("sub_score", 0)
+
+        # Check and initialize answer_order structure
+        ao = student.answer_order
+        if not isinstance(ao, dict):
+            ao = {"scores": {}}
+        if "scores" not in ao:
+            ao["scores"] = {}
+
+        ao["scores"][sub_quiz_id] = sub_score
+        student.answer_order = ao
+        student.score = sum(ao["scores"].values())
+        db.session.commit()
+
+        return jsonify({
+            "done": True,
+            "score": student.score,
+            "total": sum(SUB_QUIZ_MAX_SCORES.values()),
+            "sub_quiz_id": sub_quiz_id,
+            "sub_score": sub_score,
+            "completed": list(ao["scores"].keys())
+        })
+    else:
+        answer_order = data.get("answer_order", [])
+        score = 0
+        for row in answer_order:
+            r_idx = row.get("row_idx")
+            img = row.get("image_id")
+            left = row.get("left_id")
+            right = row.get("right_id")
+            note = row.get("note_id")
+            reason = row.get("reason_id")
+
+            step_num = r_idx + 1
+            correct_img = step_num
+            correct_left = step_num
+            correct_right = 0 if step_num == 1 else step_num
+            correct_note = step_num
+            correct_reason = step_num
+
+            if img == correct_img and left == correct_left and right == correct_right and note == correct_note and reason == correct_reason:
+                score += 1
+
+        student.answer_order = answer_order
+        student.score = score
+        db.session.commit()
+
+        return jsonify({"done": True, "score": score, "total": 7})
 
 
 # ─── GET /quiz/results ───────────────────────────────────────────
@@ -92,11 +152,36 @@ def get_results():
         .all()
     )
 
+    if session.quiz_type == "option2":
+        total_steps = sum(SUB_QUIZ_MAX_SCORES.values())
+    else:
+        total_steps = 7
+
+    def is_submitted(s):
+        if session.quiz_type == "option2":
+            return isinstance(s.answer_order, dict) and len(s.answer_order.get("scores", {})) > 0
+        return s.answer_order is not None
+
+    def get_progress_info(s):
+        if session.quiz_type == "option2":
+            if isinstance(s.answer_order, dict) and "scores" in s.answer_order:
+                count = len(s.answer_order["scores"])
+                return f"Đã làm {count}/10 bài"
+            return "Chưa làm bài nào"
+        return ""
+
     return jsonify({
         "code": code,
-        "total_steps": len(CORRECT_ORDER),
+        "quiz_type": session.quiz_type,
+        "total_steps": total_steps,
         "students": [
-            {"id": s.id, "name": s.name, "score": s.score, "submitted": s.answer_order is not None}
+            {
+                "id": s.id,
+                "name": s.name,
+                "score": s.score,
+                "submitted": is_submitted(s),
+                "progress_text": get_progress_info(s)
+            }
             for s in students
         ],
     })
@@ -113,4 +198,23 @@ def get_active():
     )
     if not session:
         return jsonify({"active": False})
-    return jsonify({"active": True, "code": session.code})
+    return jsonify({"active": True, "code": session.code, "quiz_type": session.quiz_type})
+
+
+# ─── POST /quiz/reset ────────────────────────────────────────────
+@quiz_bp.post("/reset")
+def reset_student():
+    data = request.get_json(force=True, silent=True) or {}
+    student_id = data.get("student_id")
+    if not student_id:
+        abort(400, description="Thiếu student_id")
+
+    student = Student.query.filter_by(id=student_id).first()
+    if not student:
+        abort(404, description="Không tìm thấy học viên")
+
+    student.score = 0
+    student.answer_order = None
+    db.session.commit()
+
+    return jsonify({"ok": True, "message": "Đã reset bài làm thành công"})

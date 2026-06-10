@@ -1,5 +1,5 @@
 import os
-from flask import Flask, send_from_directory, send_file, jsonify
+from flask import Flask, send_from_directory, send_file, jsonify, render_template
 
 from app.config import Config
 from app.db.database import init_db
@@ -37,7 +37,7 @@ def create_app() -> Flask:
 
     @app.route("/quiz-page")
     def quiz_student_page():
-        return send_file(os.path.join(TEMPLATES_DIR, "quiz.html"))
+        return render_template("quiz.html")
 
     # ── JSON error handlers ──────────────────────────────────────
     @app.errorhandler(404)

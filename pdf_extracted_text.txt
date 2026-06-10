@@ -1,0 +1,319 @@
+=== PAGE 1 ===
+Just in time
+Tự động hóa
+Thao tác tiêu chuẩn
+Kanban
+Lãng phí (Muda)
+Là 1 trong hai phương thức sản xuất Toyota nhằm để phát hiện ra bất thường thiết
+bị , và bất cứ bất thường nào phát sinh như chất lượng , thiết bị , khi đó máy sẽ tự
+động phát hiện và dừng lại hoặc người thao tác chỉ cần ấn công tắc dừng và dây
+chuyên sẽ được dừng lại.
+Có 1 nguyên tắc khác đưa ra ở 1 trong 3 nguyên tắc của JIT  đó là quyết định 
+sự khéo léo trong việc chạy công đoạn trôi chảy và quyết định số lượng cần 
+thiết
+Là phương pháp thực hiện sản xuất một cách hiệu quả ở trình tự không có
+lãng phí và tập trung vào động tác của người thao tác. Bao gồm 3 yếu tố như
+tiêu chuẩn cầm tay , trình tự thao tác , takt time.
+Tất cả những thứ thêm vào mà  không làm gia tăng giá trị vật
+Là một trong 2 phương thức sản xuất của Toyota nhằm nâng cao hiệu quả 
+kinh doanh  và là quan niệm của cơ chế sản xuất như chỉ sản xuất , vận 
+chuyển vật cần thiết tại thời gian cần thiết
+ Bài kiểm tra ① （ Cơ bản TIE ）
+Thuật ngữ Giải thích
+・
+・
+・
+・
+・
+・
+・
+・
+・
+・
+・
+Vấn đề ：Hãy tìm nội dung đối ứng chính xác rồi nối 2 bên lại với nhau.
+Giữ vai trò ở công cụ quản lý kiểm tra bằng mắt, công cụ của thao tác, cải tiến 
+công đoạn, báo cáo chỉ thị về vận chuyển, sản xuất. Là công cụ quản lý để 
+thực hiện sản xuất theo just in time
+Họ và tên:……………….......Code:………
+
+=== PAGE 2 ===
+Lãng phí ở động tác
+Lãng phí khi vận
+chuyển
+Lãng phí do sản xuất
+quá nhiều
+Lãng phí do chờ tay
+Lãng phí gia công
+Kiểm tra xác nhận ② （ 7 loại lãng phí）
+Thuật ngữ Giải thích
+Vấn đề ：Hãy tìm nội dung đối ứng chính xác rồi nối 2 bên lại với nhau.
+Lãng phí tồn kho
+Lãng phí do làm, sữa
+lại
+Là tình trạng tồn kho phát sinh do sản xuất vượt quá lượng đã được chỉ định ở 
+Kanban, sản xuất nhanh hơn so với thời điểm phù hợp , cần thiết. Và là lãng
+phí quan trọng che lấp đi các vấn đề lãng phí khác.
+Là lãng phí phát sinh do khoảng cách vận chuyển không hợp lý hay do trung 
+chuyển , đặt để tạm thời.
+lãng phí khi đi lấy hoặc đi tìm công cụ trong khi làm việc,  vị trí xếp đặt linh
+kiện, công cụ không hợp lý sẽ làm phát sinh ra các động tác dư thừa
+Là lãng phí tồn kho (thành phẩm giữa các công đoạn, nguyên vật liệu) phát 
+sinh do cơ cấu vận chuyển, sản xuất.
+lãng phí do thao tác sữa chữa lại các vật , phế phẩm đã bị hoàn trả lại .
+Là lãng phí thực hiện gia công không cần thiết ,không đóng góp gì cho sự tiến
+triển của công đoạn, độ chính xác của vật …
+Là lãng phí khi người thao tác đang trong trạng thái chờ không làm việc do 
+thiết bị đang gia công hoặc sự cân bằng trong công đoạn không đồng đều , 
+lượng công việc ít…
+
+=== PAGE 3 ===
+Được áp dụng ở việc quan sát thao tác trong thời gian ngắn, theo qui tắc , tính
+lặp lại cao , và là 1 phương pháp của việc phân tích thời gian
+Bài kiểm tra③ （Phân tích thời gian ・Tốc độ thao tác ）
+Phân tích thời gian
+thao tác yếu tố
+Quan sát đo liên tục
+Chờ tay
+Tốc độ tiêu chuẩn
+Tốc độ bình thường
+Thuật ngữ Giải thích
+・
+・
+・
+・
+・
+・
+・
+・
+・
+・
+・
+Vấn đề ：Hãy tìm nội dung đối ứng chính xác rồi nối 2 bên lại với nhau.
+Được áp dụng ở việc quan sát lâu ở thời gian có tính lặp lại nhiều lần hoặc ít
+tính lặp lại và là 1 phương pháp của phân tích thời gian
+Là trạng thái người thao tác đứng chờ việc cho dù thực hiện công việc theo 
+đúng trình tự của thao tác tiêu chuẩn
+Là tốc độ thao tác nhanh, có ý thức cố gắng làm việc chăm chỉ.
+Là tốc độ mà người thao tác vừa làm vừa suy nghĩ về vấn đề khác
+Là phương pháp thực hiện sản xuất một cách hiệu quả ở trình tự không có 
+lãng phí và tập trung vào động tác của người thao tác. Bao gồm 3 yếu tố như 
+tiêu chuẩn chờ tay, trình tự thao tác, takt time.
+Họ và tên:……………….......Code:………
+
+=== PAGE 4 ===
+Trình tự thao tác
+Machine time
+Tiêu chuẩn chờ tay
+Phiếu kết hợp thao tác
+tiêu chuẩn
+Takt time
+Là 1 trong 3 yếu tố của thao tác tiêu chuẩn , và là trình tự thao tác mà người
+thao tác có thể sản suất ra sản phẩm tốt một cách hiệu quả nhất.
+Là thời gian cần thiết của máy để gia công ra 1 sản phẩm. Ở các máy thông
+thường thì, sau khi ấn nút khởi động thì máy sẽ thực hiện gia công sản phẩm , 
+và sẽ tự động khôi phục lại ở vị trí ban đầu
+Là giá trị thời gian phải mất bao lâu để sản xuất ra 1 sản phẩm hoặc 1 linh
+kiện
+Là 1 trong 3 yếu tố của thao tác tiêu chuẩn, thực hiện cầm vật với thao tác , 
+động tác, thứ tự lặp đi lặp lại giống nhau trong giới hạn tối thiểu nhất.
+Là vật điều tra rõ thời gian di chuyển và thời gian thao tác tay của mỗi công
+đoạn mà 1 người thao tác có thể đảm nhận trong phạm vi như thế nào trong
+Takt time.
+Kiểm tra xác nhận  ④ （ Thao tác tiêu chuẩn ）
+Thuật ngữ Giải thích
+・
+・
+・
+・
+・
+・
+・
+・
+・
+・
+・
+Vấn đề ：Hãy tìm nội dung đối ứng chính xác rồi nối 2 bên lại với nhau.
+Là vật dùng để ghi thời gian thay thế công cụ , thời gian máy tự động làm , 
+thời gian thao tác tay , và cũng là vật dùng để tính năng lực của công đoạn 
+
+=== PAGE 5 ===
+Bài kiểm tra ⑤ （8 hạng mục cơ bản ）
+Vấn đề： Hãy liên kết chính xác thích hợp theo 8 hạng mục cơ bản.
+Thông báo bất thường từ  sản lượng của mỗi giờ
+Bản quản lý sản lượng Đối sách về các vấn đề đã phát sinh trong thực tế
+Bản kế hoạch cải tiến
+Bản thao tác tiêu chuẩn
+Xác minh rõ  về qui định thao tác
+Andon
+Thông báo chỉ thị thao tác, Hiện trạng hoạt động của dây 
+chuyền
+Tiến độ sản xuất
+Xác nhận rõ sự tiến triễn và chậm trễ của sản xuất
+Quản lý lượng tồn kho
+Phát hiện bát thường theo sự tăng giảm của lượng tồn kho
+Hiệu xuất hoạt động
+Xác minh rõ về nguyên nhân chính không hoạt động của thiết bị
+Biểu đồ quản lý công số
+Quản lý hiện trạng sản xuất đạt được hằng ngày. 
+Cấu thành dây chuyền sản xuất
+Cân bằng thời gian yêu cầu ở mỗi dây chuyền
+8 hạng mục cơ bản Vai trò
+Họ và tên:……………….......Code:………
+
+=== PAGE 6 ===
+Vấn đề ： Hãy lựa chọn những cum từ ngữ chính xác nhất rồi điền vào những ô 
+trống dưới đây.
+Động tác ・thao tác được nhìn quen mỗi ngày thì có thể nhớ nhưng những lãng phí của động tác nhỏ 
+thì hầu như không nhìn thấy được
+Và vì là những lãng phí nhỏ nên hầu như ai cũng nghĩ rằng sẽ không gây ảnh hưởng đến năng suất 
+sản xuất
+Tuy nhiên  nếu tích tụ （ C ）lại và thực hiện trong 1 ngày thì sẽ là nguyên 
+nhân dẫn đến （ A ）
+Thông thường thì ở động tác nào cũng phải giữ lấy ý thức về vấn đề , quan sát chi tiết , và tạo cho 
+mình ý thức cải thiện , xem xét phương pháp ・trình tự đúng , chính xác hơn nhờ có việc lĩnh hội cách 
+nhìn của động tác (phương pháp phân tích) 
+Bài kiểm tra ⑥ （Cải thiện với cách nhìn về động tác：mục đích của việc phân 
+tích động tác ）
+Ａ： Tổn thất lớn về thời gian
+Ｂ： Lợi ích lớn
+Ｃ： những lãng phí nhỏ
+
+=== PAGE 7 ===
+Vấn đề ：Hãy         vào phạm vi của phân tích động tác ở trong cấu thành của 
+thao tác
+Bài kiểm tra ⑦ （Cải thiện với cách nhìn về động tác：cấu thành thao tác）
+Ｂ/Ｋ lắp ráp
+Thao tác đơn vị
+・Thao tác lắp vào
+Lấy ốc rồi dùng 
+tua vít để lắp ốc
+vào 
+・Thao tác xiết tạm
+Lấy ốc rồi xiết 
+tạm ốc lại
+・Tháo tác xiết chặt
+Lấy tua vít rồi 
+Xiết chặt ốc lại
+Thao tác yếu tố
+Thao tác chủ yếu
+Thao tác đơn vị Thao tác yếu tố Động tác cơ bảnThao tác (công 
+đoạn) Đưa tay đến lấy ốc
+Động tác cơ bản
+Nắm lấy ốc 
+Động tác cơ bản
+Họ và tên:……………….......Code:………
+
+=== PAGE 8 ===
+Bài kiểm tra ⑧ （Cải thiện với cách nhìn về động tác：4 nguyên tắc để cải thiện）
+Vấn đề ：Hãy lựa ra 4 nguyên tắc thích ứng với ví dụ ứng dụng và gợi ý cải thiện
+①ムダなものを無くしたら？
+②不必要な作業をやめたら？
+①不必要な外観検査をなくす。
+②作業場を近づけて運搬をなくす。
+①まとめてみたら？
+②組み合わせてみたら？
+③同時におこなったら？
+①半田付を数箇所まとめて行う。
+②レンチとトルクレンチの組合せ。
+③プレスによる打抜きと穴明け同時化。
+①順序を入れかえたら？
+②他のやり方にかえたら？
+③他の物と取り替えたら？
+①検査工程を前の方にもってくる。
+②溶接を接着に変える。
+③材料を変える。
+①単純にしたら？
+②簡単にしたら？
+③数を少なくしたら？
+①余分の機能を無くす。（専用にする）
+②仕事を分担して簡単にする。
+③部品の種類を統一する。
+4 nguyên tắc Gợi ý cải thiện Ví dụ ứng dụng
+C
+A
+D
+E
+Ｃ：Loại bỏ
+（Lượt bớt）
+Ａ：Kết hợp Ｄ：Lắp thay 
+thế
+Ｅ：Đơn giảnＢ：Bổ sung
+1.Nếu loại bỏ vật lãng phí?
+2.Nếu dừng các thao tác không cần thiết ?
+1.Nếu thử thu thập , kết luận lại ?
+2.Nếu thử kết hợp lại ?
+3.Nếu thực hiện đồng thời ?
+1.Nếu thay thế trình tự ?
+2.Nếu thay đổi cách làm khác ?
+3.Nếu lấy thay thế với vật khác ?
+1.Nếu làm ngắn gọn ?
+2.Nếu làm đơn giản ?
+3.Nếu làm ít ?
+1.Loại bỏ được việc kiểm tra bề ngoài không cần thiết
+2.Loại bỏ được việc vận chuyển ở các nơi thao tác gần
+1.Tiến hành thu thập được những chổ đã được chấm chất hàn
+2.Kết hợp cờ lê với cờ lê xiết lực
+3.Đồng thời hóa việc khoan lỗ với việc ép dập
+1.Mang đến phía trước công đoạn kiểm tra
+2.Thay chất hàn ở chổ hàn
+3.Thay thế vật liệu
+1.Loại bỏ được tính năng của phần thừa(chuyên dụng)
+2.Phân công việc đảm nhiệm, làm một cách đơn giản
+3.Thông nhất chủng loại của linh kiện
+
+=== PAGE 9 ===
+Vấn đề ： Hãy khoanh tròn ○vào vấn đề đúng và đánh dấu ×vào vấn đề sai về
+phương pháp quan sát động tác
+Kiểm tra xác nhận ⑨ （cải thiện với cách nhìn về động tác：cải thiện ở đơn vị động tác 
+cơ bản ）
+Trình tự của động tác
+Độ lớn của động tác
+Độ dễ của động tác
+Độ khó của động tác
+○×Phương pháp quan sát động tác
+Phương pháp của động tác
+O
+X
+O
+O
+O
+
+=== PAGE 10 ===
+Bài kiểm tra ⑩ （Bản quản lý sản lượng：số cái giới hạn quản lý mỗi thời gian ）
+Vấn đề ： Hãy tính số cái giới hạn trong mỗi thời gian(thời gian 50 , 60 phút)
+Takt time ：20giây
+Giới hạn quản lý：-10％
+3,000 giây      100%                        90 %
+× =  252 cái  252 台 ×  = 226 台
+  11.9 giây      100                         100
+※Làm tròn số thập phân
+Thời gian 50 phút
+3,600 giây      100%                        90 %
+×  =  302 cái  302 台 × = 272 台
+ 11.9 giây    100                         100
+Thời gian 60 phút
+Số cái giới hạn 
+quản lý
+Số cái giới hạn 
+quản lý
+20
+20 150
+180 90
+90 135
+162
+150
+180
+Ａ
+Ｃ
+Ｂ
+Ｄ
+Ａ 180
+Ｃ 150
+Ｂ 162
+Ｄ 135
+台
+台
+台
+台
+
