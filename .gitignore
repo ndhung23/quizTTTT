@@ -4,6 +4,9 @@ __pycache__/
 *.db
 .env
 *.sqlite3
+<<<<<<< HEAD
 .Đúc 5230-5260 mới nhất.xls
+=======
+>>>>>>> b0868322648d16ffe42bc74ceae854ed129df8c1
 
 #  py -m flask --app app.app run --debug  
