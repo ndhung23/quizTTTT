@@ -7,14 +7,16 @@ let quizType = 'option1';
 let sessionCode = '';
 
 // Option 1 Grid State
-// gridPlacement[row_idx][col_name] = id (1..7)
-let gridPlacement = Array.from({length: 7}, () => ({
+// gridPlacement[row_idx][col_name] = id (1..23)
+let gridPlacement = Array.from({length: 23}, () => ({
   image_id: null,
   left_id: null,
   right_id: null,
   note_id: null,
   reason_id: null
 }));
+
+let currentPart = 1; // 1: Steps 1-7, 2: Steps 8-15, 3: Steps 16-23
 
 // Option 2 State
 let completedSubQuizzes = [];

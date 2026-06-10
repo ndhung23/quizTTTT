@@ -10,12 +10,22 @@ function initOption1() {
 }
 
 function renderOption1Pools() {
-  // We represent each choice with {id: 1..7, text/src: ...}
-  const images = shuffle([1, 2, 3, 4, 5, 6, 7].map(x => ({id: x, src: `/images/${x}.png`})));
-  const lefts = shuffle(O1_TEXTS.left.map((x, i) => ({id: i + 1, text: x})));
-  const rights = shuffle(O1_TEXTS.right.map((x, i) => ({id: i + 1, text: x})));
-  const notes = shuffle(O1_TEXTS.note.map((x, i) => ({id: i + 1, text: x})));
-  const reasons = shuffle(O1_TEXTS.reason.map((x, i) => ({id: i + 1, text: x})));
+  let startId, endId;
+  if (currentPart === 1) {
+    startId = 1; endId = 7;
+  } else if (currentPart === 2) {
+    startId = 8; endId = 15;
+  } else {
+    startId = 16; endId = 23;
+  }
+
+  const imgIds = [];
+  for (let i = startId; i <= endId; i++) imgIds.push(i);
+  const images = shuffle(imgIds.map(x => ({id: x, src: `/images/${x}.png`})));
+  const lefts = shuffle(O1_TEXTS.left.slice(startId - 1, endId).map((x, i) => ({id: startId + i, text: x})));
+  const rights = shuffle(O1_TEXTS.right.slice(startId - 1, endId).map((x, i) => ({id: startId + i, text: x})));
+  const notes = shuffle(O1_TEXTS.note.slice(startId - 1, endId).map((x, i) => ({id: startId + i, text: x})));
+  const reasons = shuffle(O1_TEXTS.reason.slice(startId - 1, endId).map((x, i) => ({id: startId + i, text: x})));
 
   // Render Images Pool
   const imgPool = document.getElementById('poolImages');
@@ -107,11 +117,20 @@ function onO1DragEnd() {
 }
 
 function renderOption1Grid() {
+  let startIdx, endIdx;
+  if (currentPart === 1) {
+    startIdx = 0; endIdx = 6;
+  } else if (currentPart === 2) {
+    startIdx = 7; endIdx = 14;
+  } else {
+    startIdx = 15; endIdx = 22;
+  }
+
   // 1. Render Desktop Table
   const tbody = document.getElementById('gridTableBody');
   tbody.innerHTML = '';
 
-  for (let r = 0; r < 7; r++) {
+  for (let r = startIdx; r <= endIdx; r++) {
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-white/5 transition';
 
@@ -158,7 +177,7 @@ function renderOption1Grid() {
   const mobileContainer = document.getElementById('mobileCardsContainer');
   if (mobileContainer) {
     mobileContainer.innerHTML = '';
-    for (let r = 0; r < 7; r++) {
+    for (let r = startIdx; r <= endIdx; r++) {
       const card = document.createElement('div');
       card.className = 'glass-card rounded-2xl border border-white/10 p-4 space-y-3';
       
@@ -232,7 +251,7 @@ function createTableCell(rowIdx, colName) {
 
 function placeItem(id, row, col) {
   // First, check if this ID is already placed elsewhere in this column. If so, clear it.
-  for (let r = 0; r < 7; r++) {
+  for (let r = 0; r < 23; r++) {
     if (gridPlacement[r][col] === id) {
       gridPlacement[r][col] = null;
     }
@@ -262,7 +281,7 @@ function refreshGridAndPools() {
     reason_id: new Set()
   };
 
-  for (let r = 0; r < 7; r++) {
+  for (let r = 0; r < 23; r++) {
     for (const key in used) {
       if (gridPlacement[r][key] !== null) {
         used[key].add(gridPlacement[r][key]);
@@ -328,7 +347,7 @@ function openSelectionModal(rowIdx, colName) {
   title.textContent = `Chọn ${colLabel} - Bước ${rowIdx + 1}`;
 
   const usedIds = new Set();
-  for (let r = 0; r < 7; r++) {
+  for (let r = 0; r < 23; r++) {
     if (r !== rowIdx && gridPlacement[r][colName] !== null) {
       usedIds.add(gridPlacement[r][colName]);
     }
@@ -337,9 +356,18 @@ function openSelectionModal(rowIdx, colName) {
   optionsDiv.innerHTML = '';
   const currentVal = gridPlacement[rowIdx][colName];
 
+  let startId, endId;
+  if (currentPart === 1) {
+    startId = 1; endId = 7;
+  } else if (currentPart === 2) {
+    startId = 8; endId = 15;
+  } else {
+    startId = 16; endId = 23;
+  }
+
   let availableItems = [];
   if (colName === 'image_id') {
-    for (let id = 1; id <= 7; id++) {
+    for (let id = startId; id <= endId; id++) {
       if (!usedIds.has(id)) {
         availableItems.push({ id, src: `/images/${id}.png` });
       }
@@ -353,7 +381,7 @@ function openSelectionModal(rowIdx, colName) {
 
     textArr.forEach((text, i) => {
       const id = i + 1;
-      if (!usedIds.has(id)) {
+      if (id >= startId && id <= endId && !usedIds.has(id)) {
         availableItems.push({ id, text });
       }
     });
@@ -416,13 +444,65 @@ function closeSelectionModal() {
 
 function updateOption1Progress() {
   let filled = 0;
-  for (let r = 0; r < 7; r++) {
+  for (let r = 0; r < 23; r++) {
     for (const key in gridPlacement[r]) {
       if (gridPlacement[r][key] !== null) filled++;
     }
   }
-  document.getElementById('progressTextO1').textContent = `Đã xếp: ${filled}/35 ô`;
-  document.getElementById('submitBtnO1').disabled = (filled !== 35);
+  document.getElementById('progressTextO1').textContent = `Đã xếp: ${filled}/115 ô (Phần ${currentPart}/3)`;
+  
+  const btnPrev = document.getElementById('prevBtnO1');
+  const btnNext = document.getElementById('nextBtnO1');
+  const btnSubmit = document.getElementById('submitBtnO1');
+  
+  if (btnPrev) btnPrev.disabled = (currentPart === 1);
+  if (btnNext) {
+    if (currentPart === 3) {
+      btnNext.textContent = 'Hoàn thành';
+    } else {
+      btnNext.textContent = 'Tiếp';
+    }
+  }
+  if (btnSubmit) {
+    btnSubmit.disabled = (currentPart !== 3);
+  }
+}
+
+function goToPrevPart() {
+  if (currentPart > 1) {
+    currentPart--;
+    initOption1();
+  }
+}
+
+function goToNextPart() {
+  if (currentPart < 3) {
+    currentPart++;
+    initOption1();
+  } else {
+    triggerSubmitFlow();
+  }
+}
+
+function triggerSubmitFlow() {
+  let filled = 0;
+  for (let r = 0; r < 23; r++) {
+    for (const key in gridPlacement[r]) {
+      if (gridPlacement[r][key] !== null) filled++;
+    }
+  }
+
+  if (filled < 115) {
+    if (confirm(`Bạn chưa hoàn thành hết bài thi (chỉ mới xếp được ${filled}/115 ô). Bạn có chắc chắn muốn nộp bài không?`)) {
+      if (confirm('Xác nhận nộp bài? Nhấn OK để gửi kết quả bài thi.')) {
+        submitQuizOption1();
+      }
+    }
+  } else {
+    if (confirm('Bạn đã hoàn thành toàn bộ bài thi. Xác nhận nộp bài?')) {
+      submitQuizOption1();
+    }
+  }
 }
 
 async function submitQuizOption1() {
@@ -468,24 +548,24 @@ function showO1Results(data) {
   document.getElementById('screenOption1').classList.add('hidden');
   document.getElementById('screenResult').classList.remove('hidden');
 
-  const pct = Math.round(data.score / 7 * 100);
+  const pct = Math.round(data.score / 23 * 100);
   const emoji = pct === 100 ? '🏆' : pct >= 70 ? '🎉' : pct >= 40 ? '👍' : '💪';
   const title = pct === 100 ? 'Hoàn hảo!' : pct >= 70 ? 'Xuất sắc!' : pct >= 40 ? 'Khá tốt!' : 'Cố gắng hơn!';
 
   document.getElementById('resultEmoji').textContent = emoji;
   document.getElementById('resultTitle').textContent = title;
-  document.getElementById('resultSub').textContent = `${studentName} – ${data.score}/7 đúng (${pct}%)`;
-  document.getElementById('scoreDisplay').textContent = `${data.score}/7`;
+  document.getElementById('resultSub').textContent = `${studentName} – ${data.score}/23 đúng (${pct}%)`;
+  document.getElementById('scoreDisplay').textContent = `${data.score}/23`;
 
   const detail = document.getElementById('answerDetail');
   detail.innerHTML = '';
 
-  for (let r = 0; r < 7; r++) {
+  for (let r = 0; r < 23; r++) {
     const row = gridPlacement[r];
     const step_num = r + 1;
     const correct_img = step_num;
     const correct_left = step_num;
-    const correct_right = step_num === 1 ? 0 : step_num;
+    const correct_right = step_num;
     const correct_note = step_num;
     const correct_reason = step_num;
 

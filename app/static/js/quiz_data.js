@@ -85,22 +85,17 @@ const SUB_QUIZ_DATA = {
   },
   7: {
     title: "Bài 7: Cấu thành thao tác",
-    type: "matching",
-    left: ["Thao tác (công đoạn)", "Thao tác đơn vị", "Thao tác yếu tố", "Động tác cơ bản"],
-    right: [
-      { id: "A", text: "B/K lắp ráp" },
-      { id: "B", text: "Lấy ốc rồi dùng tua vít để lắp ốc vào" },
-      { id: "C", text: "Thao tác lắp vào" },
-      { id: "D", text: "Đưa tay đến lấy ốc" }
-    ],
-    correct: { 0: "A", 1: "B", 2: "C", 3: "D" }
+    type: "single_choice_image",
+    image: "/static/q7.png",
+    options: ["(1)", "(2)", "(3)", "(4)"],
+    correct: { 0: "(4)" }
   },
   8: {
     title: "Bài 8: 4 nguyên tắc cải thiện",
     type: "matching",
     left: ["Loại bỏ (Lượt bớt)", "Kết hợp", "Thay thế (Thay đổi)", "Đơn giản"],
     right: [
-      { id: "A", text: "If loại bỏ vật lãng phí hoặc dừng thao tác không cần thiết (Ví dụ: Loại bỏ kiểm tra bề ngoài không cần thiết)" }, // Wait, check if there was 'Nếu' or 'If' in original. Original had: "Nếu loại bỏ vật lãng phí..." let's check line 561: "Nếu loại bỏ vật lãng phí..."
+      { id: "A", text: "If loại bỏ vật lãng phí hoặc dừng thao tác không cần thiết (Ví dụ: Loại bỏ kiểm tra bề ngoài không cần thiết)" },
       { id: "B", text: "Nếu thử thu thập, kết hợp lại hoặc thực hiện đồng thời (Ví dụ: Đồng thời hóa việc khoan lỗ với việc ép dập)" },
       { id: "C", text: "Nếu thay thế trình tự, thay đổi cách làm hoặc thay thế vật khác (Ví dụ: Mang đến phía trước công đoạn kiểm tra)" },
       { id: "D", text: "Nếu làm ngắn gọn, đơn giản hoặc giảm số lượng (Ví dụ: Phân công việc đảm nhiệm, làm một cách đơn giản)" }
@@ -121,15 +116,10 @@ const SUB_QUIZ_DATA = {
   },
   10: {
     title: "Bài 10: Giới hạn sản lượng",
-    type: "tf",
-    questions: [
-      { id: "1", text: "Thời gian 50 phút: Số cái mục tiêu (100%):" },
-      { id: "2", text: "Thời gian 50 phút: Số cái giới hạn quản lý (90%):" },
-      { id: "3", text: "Thời gian 60 phút: Số cái mục tiêu (100%):" },
-      { id: "4", text: "Thời gian 60 phút: Số cái giới hạn quản lý (90%):" }
-    ],
-    options: ["150", "135", "180", "162", "200", "90"],
-    correct: { "1": "150", "2": "135", "3": "180", "4": "162" }
+    type: "custom_inputs_image",
+    image: "/static/q10.png",
+    inputs: ["A", "B", "C", "D"],
+    correct: { "A": "180", "B": "162", "C": "150", "D": "135" }
   }
 };
 
@@ -141,7 +131,23 @@ const O1_TEXTS = {
     "Lấy terminal S/A set vào khuôn trong",
     "Lấy terminal ngắn từ khay",
     "Set terminal ngắn vào khuôn phía ngoài",
-    "Lấy terminal dài từ khay"
+    "Lấy terminal dài từ khay",
+    "Set terminal dài vào khuôn phía ngoài",
+    "—",
+    "Lấy jig set Bush từ vị trí để jig \n(Áp dụng máy đúc số 12)",
+    "Đặt jig set bush\n lên khuôn",
+    "Hai tay bóp mạnh vị trí tay cầm để set 6 bush vào vị trí cố định",
+    "—",
+    "—",
+    "Chỉnh jig",
+    "Hai tay bóp mạnh vị trí tay cầm để set 6 bush vào \nvị trí cố định ",
+    "—",
+    "Nhấc jig set bush đặt\n vào vị trí để jig\n(Áp dụng máy đúc số 12)",
+    "—",
+    "Các ngón tay giữ cố \nđịnh các terminal trên khuôn.",
+    "Bóp vào dâu slide sau đó từ từ set conector khớp vào các \nchân terminal",
+    "Kiểm tra các lỗ của terminal có khớp với chân pin \nkhông?",
+    "—"
   ],
   right: [
     "—",
@@ -150,7 +156,23 @@ const O1_TEXTS = {
     "Lấy terminal S/A set vào khuôn ngoài",
     "Lấy terminal ngắn từ khay",
     "Set terminal ngắn vào khuôn trong",
-    "Lấy terminal dài từ khay"
+    "Lấy terminal dài từ khay",
+    "Set terminal dài vào khuôn",
+    "Lấy súng khí làm sạch khuôn",
+    "Lấy jig set Bush từ vị trí để jig \n(Áp dụng máy đúc số 3)",
+    "Chỉnh jig",
+    "Hai tay bóp mạnh vị trí tay cầm để set 6 bush vào vị trí cố định",
+    "Ấn vào vị trí trung tâm của jig",
+    "Nhấc jig set bush xoay 180°",
+    "Đặt jig set bush vào nửa khuôn trong.",
+    "Hai tay bóp mạnh vị trí tay cầm để set 6 bush vào ",
+    "Ấn vào vị trí trung tâm của jig",
+    "Nhấc jig set bush đặt\n vào vị trí để jig\n(Áp dụng máy đúc số 3)",
+    "Xác nhận đủ bush,bush không bị kênh",
+    "Bóp vào dâu slide sau đó từ từ set conector  khớp vào các chân terminal",
+    "Các ngón tay giữ cố định\n các terminal trên khuôn",
+    "Kiểm tra các lỗ của terminal có khớp với chân pin \nkhông?",
+    "Gạt công tắc"
   ],
   note: [
     "Đảm bảo an toàn khi thao tác:\n1. Mũ đội chùm kín tóc\n2.Đeo kính không được trễ xuống mũi\n3.Gang tay, xỏ tay không rách thủng, đeo xỏ tay phải qua khủy tay, không để lộ cánh tay\n4. Giày bảo hộ thắt nút buộc dây chặt chẽ",
@@ -159,7 +181,23 @@ const O1_TEXTS = {
     "1. Lỗ trên terminal khớp với chân pin trên khuôn.\n2. Ngón tay cái ấn các lỗ pin từ phía IC ra tới đầu các chân terminal.",
     "Terminal không bị cong.",
     "Xác nhận lỗ trên terminal khớp với chân pin trên khuôn.",
-    "Terminal không bị cong."
+    "Terminal không bị cong.",
+    "Xác nhận lỗ trên terminal khớp với chân pin trên khuôn.",
+    "1. Cầm vào vị trí tay cầm kéo súng khí sát bề mặt khuôn.\n2. Xì khí đến khi hệ thống làm sạch khuôn tự ngắt    ",
+    "Cầm chắc ở phần trung tâm của jig, tránh làm rơi.",
+    "1. Hướng nhãn màu \ncam về phía người thao tác\n2.Chân jig khớp với các lỗ \ntrên khuôn \n3.Nhấc jig, chân jig cao hơn đầu conector",
+    "Bóp hết cỡ, dứt khoát, đồng thời cả hai tay.",
+    "Dùng lòng bàn tay phải ấn hết cỡ đến khi có tiếng kêu cạch",
+    "1.Nhấc jig, chân jig cao hơn đầu conector\n2.Hướng nhãn màu cam về phía đối diện người thao tác",
+    "\nChân jig khớp với lỗ trên khuôn ",
+    "Bóp tay cầm hết cỡ, dứt khoát, đồng thời cả hai tay.",
+    "Dùng lòng bàn tay phải ấn hết cỡ đến khi có tiếng kêu cạch",
+    "Cầm chắc chắn, xoay jig 180̊ để hướng nhãn màu cam về phía gần người thao tác",
+    "1.Chỉ tay xác nhận theo chiều kim đồng hồ, mắt nhìn theo tay.\n2. Bắt đầu từ vị trí bush  bên trái gần  NTT nhất \n",
+    "1.Tay phải bóp vào vị trí của Slide\n trên conector.\n2.Các chân terminal nằm trên 1 mặt phẳng, khớp with chân pin  trên khuôn.",
+    "1.Tay trái bóp vào vị trí của Slide\n trên conector\n2.Các chân terminal nằm trên 2 mặt phẳng, khớp với chân pin\n trên khuôn.",
+    "Dùng các ngón tay ấn (không miết) các chân terminal khớp với chân pin.",
+    "1. Vừa xoay người vừa gạt công tắc.\n2. Người không đứng trong khu vực cảm biến"
   ],
   reason: [
     "1. Tránh dị vật tóc rơi vào sản phẩm.\n2.Dị vật bắn vào mắt\n3. Chạm vào vật có nhiệt độ cao gây bỏng tay.\n4.Vấp ngã khi thao tác",
@@ -168,6 +206,22 @@ const O1_TEXTS = {
     "Tạo phế phẩm : Lộ terminal",
     "Tạo phế phẩm:\nCong terminal không set vào khuôn được",
     "Tạo phế phẩm:\nNhựa phủ moter terminal, Terminal bị lộ",
-    "Tạo phế phẩm:\nCong terminal không set vào khuôn được"
+    "Tạo phế phẩm:\nCong terminal không set vào khuôn được",
+    "Tạo phế phẩm:\nnhựa phủ moter terminal, Terminal bị lộ",
+    "1. Khí làm sạch khuôn không thổi ra\n2. Không làm sạch hết dị vật\n",
+    "1. Hỏng jig.\n2. Sứt mẻ khuôn.\n3. Rơi jig vào chân gây bị thương.",
+    "1. Bốn  Bush không vào đúng vị trí\n2. Mẻ khuôn\n3. Tạo lỗi xước miệng conector và lòng sản phẩm.",
+    "1.Bush không rơi xuống pin.\n2.Tạo phế phẩm thiếu bush.",
+    "Không ấn hết bush \n=> Bush bị kênh,tạo lỗi nhựa tràn bush ,bush biến dạng",
+    "1. Tạo lỗi xước miệng conector và lòng sản phẩm.\n2. Bốn  Bush không vào đúng vị trí",
+    "Bốn  Bush không vào đúng vị trí\n",
+    "1.Bush không rơi xuống pin.\n2.Tạo phế phẩm thiếu bush.",
+    "Không ấn hết bush \n=> Bush bị kênh,tạo lỗi nhựa tràn bush ,bush biến dạng",
+    "1. Hỏng jig.\n2. Sứt mẻ khuôn.\n3. Rơi jig vào chân gây bị thương.",
+    "1.Tạo phế phẩm: thiếu bush, nhựa tràn bush,\n2.Sai quy định",
+    "1.Không nhả được Slide\n2.Tạo phế phẩm: lộ terminal, terminal cong.",
+    "1.Không nhả được Slide\n3.Tạo phế phẩm: lộ terminal, terminal cong",
+    "Tạo phế phẩm: lộ \nterminal, dị vật khác kim loại (từ găng tay)",
+    "Máy báo lỗi"
   ]
 };

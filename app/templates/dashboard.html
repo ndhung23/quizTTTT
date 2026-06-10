@@ -86,8 +86,8 @@
         <div class="flex flex-col gap-1.5 min-w-[280px]">
           <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Chọn loại bài kiểm tra để giao</label>
           <select id="quizTypeSelect" class="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 font-semibold text-gray-700 focus:outline-none focus:border-blue-500 transition shadow-sm">
-            <option value="option1">Option 1: Kiểm tra thao tác đúc</option>
-            <option value="option2">Option 2: Kiểm tra TIE</option>
+            <option value="option1">Kiểm tra thao tác đúc</option>
+            <option value="option2">Kiểm tra TIE</option>
           </select>
         </div>
         <button id="startBtn" onclick="startQuiz()"
@@ -189,7 +189,7 @@
       </div>
 
       <!-- Print Footer (Hidden on screen, visible on print) -->
-      <div id="printFooter" class="hidden text-black mt-12">
+      <!-- <div id="printFooter" class="hidden text-black mt-12">
         <div class="flex justify-between text-sm font-semibold">
           <div class="w-1/3 text-center">
             <p>HỌC VIÊN</p>
@@ -202,7 +202,7 @@
             <div class="h-24"></div>
           </div>
         </div>
-      </div>
+      </div> -->
 
     </div>
 
@@ -239,7 +239,7 @@
         currentCode = data.code;
         document.getElementById('quizCode').textContent = data.code;
         
-        const typeName = data.quiz_type === 'option2' ? 'Option 2: Kiểm tra TIE' : 'Option 1: Kiểm tra thao tác đúc';
+        const typeName = data.quiz_type === 'option2' ? 'Kiểm tra TIE' : 'Kiểm tra thao tác đúc';
         document.getElementById('activeQuizTypeName').textContent = typeName;
 
         // QR via public API (no key needed)
@@ -285,7 +285,7 @@
         document.getElementById('countSubmitted').textContent = submitted;
         document.getElementById('avgScore').textContent = avg;
 
-        const typeName = data.quiz_type === 'option2' ? 'Option 2: Kiểm tra TIE' : 'Option 1: Kiểm tra thao tác đúc';
+        const typeName = data.quiz_type === 'option2' ? 'Kiểm tra TIE' : 'Kiểm tra thao tác đúc';
         document.getElementById('activeQuizTypeName').textContent = typeName;
 
         const tbody = document.getElementById('resultsBody');
@@ -363,7 +363,7 @@
         if (data.active) {
           currentCode = data.code;
           document.getElementById('quizCode').textContent = data.code;
-          const typeName = data.quiz_type === 'option2' ? 'Option 2: Kiểm tra TIE' : 'Option 1: Kiểm tra thao tác đúc';
+          const typeName = data.quiz_type === 'option2' ? 'Kiểm tra TIE' : 'Kiểm tra thao tác đúc';
           document.getElementById('activeQuizTypeName').textContent = typeName;
           
           // Pre-select the matching value in dropdown if it exists

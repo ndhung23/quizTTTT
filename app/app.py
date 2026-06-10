@@ -21,10 +21,10 @@ def create_app() -> Flask:
     app.register_blueprint(auth_bp)
     app.register_blueprint(quiz_bp)
 
-    # ── Serve step images (1.png – 7.png) from project root ──────
+    # ── Serve step images (1.png – 23.png) from app/img directory ──────
     @app.route("/images/<path:filename>")
     def serve_image(filename):
-        return send_from_directory(ROOT_DIR, filename)
+        return send_from_directory(os.path.join(ROOT_DIR, "app", "img"), filename)
 
     # ── Page routes ──────────────────────────────────────────────
     @app.route("/")

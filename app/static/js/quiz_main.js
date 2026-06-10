@@ -104,13 +104,14 @@ async function retakeQuiz() {
 
     // Reset local state
     if (quizType === 'option1') {
-      gridPlacement = Array.from({length: 7}, () => ({
+      gridPlacement = Array.from({length: 23}, () => ({
         image_id: null,
         left_id: null,
         right_id: null,
         note_id: null,
         reason_id: null
       }));
+      currentPart = 1;
       initOption1();
       document.getElementById('screenResult').classList.add('hidden');
       document.getElementById('screenOption1').classList.remove('hidden');
@@ -124,6 +125,7 @@ async function retakeQuiz() {
 
   } catch (err) {
     alert('Lỗi kết nối mạng: ' + err.message);
+  } finally {
     btn.disabled = false;
     btn.innerHTML = originalText;
   }
@@ -181,4 +183,46 @@ window.addEventListener('DOMContentLoaded', () => {
         // network error
       });
   }
+
+  // Restore saved theme on load
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+    const sunIcon = document.getElementById('themeSunIcon');
+    const moonIcon = document.getElementById('themeMoonIcon');
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    if (sunIcon) sunIcon.classList.remove('hidden');
+    if (moonIcon) moonIcon.classList.add('hidden');
+    if (toggleBtn) {
+      toggleBtn.className = "fixed top-4 right-4 z-[99] bg-white hover:bg-slate-100 text-slate-800 p-2.5 rounded-xl border border-slate-200 shadow-lg transition duration-200 active:scale-95 flex items-center justify-center";
+    }
+  }
 });
+
+// ═══════════════════════════════════════════════════════
+//  THEME TOGGLE LOGIC
+// ═══════════════════════════════════════════════════════
+function toggleTheme() {
+  const body = document.body;
+  const sunIcon = document.getElementById('themeSunIcon');
+  const moonIcon = document.getElementById('themeMoonIcon');
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  
+  if (body.classList.contains('light-theme')) {
+    body.classList.remove('light-theme');
+    localStorage.setItem('theme', 'dark');
+    if (sunIcon) sunIcon.classList.add('hidden');
+    if (moonIcon) moonIcon.classList.remove('hidden');
+    if (toggleBtn) {
+      toggleBtn.className = "fixed top-4 right-4 z-[99] bg-slate-800 hover:bg-slate-700 text-yellow-400 p-2.5 rounded-xl border border-white/10 shadow-lg transition duration-200 active:scale-95 flex items-center justify-center";
+    }
+  } else {
+    body.classList.add('light-theme');
+    localStorage.setItem('theme', 'light');
+    if (sunIcon) sunIcon.classList.remove('hidden');
+    if (moonIcon) moonIcon.classList.add('hidden');
+    if (toggleBtn) {
+      toggleBtn.className = "fixed top-4 right-4 z-[99] bg-white hover:bg-slate-100 text-slate-800 p-2.5 rounded-xl border border-slate-200 shadow-lg transition duration-200 active:scale-95 flex items-center justify-center";
+    }
+  }
+}

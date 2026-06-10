@@ -90,7 +90,8 @@ def submit_quiz():
         sub_score = data.get("sub_score", 0)
 
         # Check and initialize answer_order structure
-        ao = student.answer_order
+        import copy
+        ao = copy.deepcopy(student.answer_order)
         if not isinstance(ao, dict):
             ao = {"scores": {}}
         if "scores" not in ao:
@@ -123,7 +124,7 @@ def submit_quiz():
             step_num = r_idx + 1
             correct_img = step_num
             correct_left = step_num
-            correct_right = 0 if step_num == 1 else step_num
+            correct_right = step_num
             correct_note = step_num
             correct_reason = step_num
 
@@ -134,7 +135,7 @@ def submit_quiz():
         student.score = score
         db.session.commit()
 
-        return jsonify({"done": True, "score": score, "total": 7})
+        return jsonify({"done": True, "score": score, "total": 23})
 
 
 # ─── GET /quiz/results ───────────────────────────────────────────
@@ -155,7 +156,7 @@ def get_results():
     if session.quiz_type == "option2":
         total_steps = sum(SUB_QUIZ_MAX_SCORES.values())
     else:
-        total_steps = 7
+        total_steps = 23
 
     def is_submitted(s):
         if session.quiz_type == "option2":
