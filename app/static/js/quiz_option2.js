@@ -6,13 +6,14 @@ const SUB_QUIZ_MAX_SCORES = {
   2: 7,
   3: 5,
   4: 5,
-  5: 9,
-  6: 2,
+  5: 2,
+  6: 4,
   7: 4,
-  8: 4,
-  9: 5,
-  10: 4
+  8: 5,
+  9: 4
 };
+const O2_TOTAL_MAX_SCORE = Object.values(SUB_QUIZ_MAX_SCORES).reduce((a, b) => a + b, 0);
+
 
 function loadOption2State() {
   updateOption2Dashboard();
@@ -20,7 +21,8 @@ function loadOption2State() {
 
 function updateOption2Dashboard() {
   let accumulated = 0;
-  for (let id = 1; id <= 10; id++) {
+  const totalCount = Object.keys(SUB_QUIZ_DATA).length;
+  for (let id = 1; id <= totalCount; id++) {
     const btn = document.getElementById(`subBtn-${id}`);
     const scoreText = document.getElementById(`subScore-${id}`);
     const statusText = document.getElementById(`subStatus-${id}`);
@@ -44,9 +46,10 @@ function updateOption2Dashboard() {
   document.getElementById('totalScoreO2').textContent = accumulated;
   const progressText = document.getElementById('progressTextO2');
   if (progressText) {
-    progressText.textContent = `Đã làm: ${completedSubQuizzes.length}/10 bài`;
+    progressText.textContent = `Đã làm: ${completedSubQuizzes.length}/${totalCount} bài`;
   }
 }
+
 
 function openSubQuiz(id) {
   activeSubQuizId = id;
@@ -63,7 +66,7 @@ function openSubQuiz(id) {
   } else if (quiz.type === 'tf') {
     renderTfExercise(quiz);
   } else if (quiz.type === 'single_choice_image') {
-    renderSingleChoiceImageExercise(quiz);
+    renderSingleChoiceImageExercise(quiz, id);
   } else if (quiz.type === 'custom_inputs_image') {
     renderCustomInputsImageExercise(quiz);
   }
@@ -299,7 +302,7 @@ function renderTfExercise(quiz) {
   document.getElementById('modalContent').appendChild(container);
 }
 
-function renderSingleChoiceImageExercise(quiz) {
+function renderSingleChoiceImageExercise(quiz, id) {
   const container = document.createElement('div');
   container.className = 'space-y-4';
 
@@ -322,8 +325,9 @@ function renderSingleChoiceImageExercise(quiz) {
     
     const radio = document.createElement('input');
     radio.type = 'radio';
-    radio.name = `q7-option`;
+    radio.name = `q${id}-option`;
     radio.value = opt;
+
     radio.className = 'sub-quiz-input w-4 h-4 text-blue-600 focus:ring-blue-500 border-white/10 bg-slate-900';
     
     const span = document.createElement('span');
@@ -350,7 +354,7 @@ function renderCustomInputsImageExercise(quiz) {
 
   const desc = document.createElement('p');
   desc.className = 'text-xs text-yellow-400 font-semibold uppercase tracking-wider';
-  desc.textContent = 'Nhập số thích hợp vào các ô A, B, C, D:';
+  desc.textContent = quiz.desc || 'Nhập số thích hợp vào các ô A, B, C, D:';
   container.appendChild(desc);
 
   const inputsDiv = document.createElement('div');
@@ -362,13 +366,13 @@ function renderCustomInputsImageExercise(quiz) {
     
     const label = document.createElement('span');
     label.className = 'text-sm font-bold text-blue-400';
-    label.textContent = `Ô ${key}:`;
+    label.textContent = (key.startsWith('Nguyên tắc') || key.startsWith('Dòng')) ? `${key}:` : `Ô ${key}:`;
     
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'sub-quiz-input bg-slate-900 border border-white/20 hover:border-slate-500 rounded-lg p-2 text-center text-sm font-bold text-yellow-300 focus:outline-none focus:border-blue-500 w-24';
     input.dataset.key = key;
-    input.placeholder = 'Nhập số...';
+    input.placeholder = quiz.placeholder || 'Nhập số...';
     
     item.appendChild(label);
     item.appendChild(input);
@@ -436,7 +440,7 @@ async function gradeAndSubmitSubQuiz() {
       });
     }
   } else if (quiz.type === 'single_choice_image') {
-    const selected = document.querySelector(`input[name="q7-option"]:checked`);
+    const selected = document.querySelector(`input[name="q${id}-option"]:checked`);
     if (!selected) {
       allAnswered = false;
     } else {
@@ -445,13 +449,14 @@ async function gradeAndSubmitSubQuiz() {
         score = 4;
       }
     }
+
   } else if (quiz.type === 'custom_inputs_image') {
     const inputs = document.querySelectorAll('.sub-quiz-input');
     inputs.forEach(input => {
       const key = input.dataset.key;
       const answer = input.value.trim();
       if (!answer) allAnswered = false;
-      if (quiz.correct[key] === answer) {
+      if (quiz.correct[key].toUpperCase() === answer.toUpperCase()) {
         score++;
       }
     });
@@ -499,14 +504,16 @@ async function gradeAndSubmitSubQuiz() {
     updateOption2Dashboard();
     closeSubQuizModal();
 
-    // Check if all 10 are completed, show congratulations
-    if (completedSubQuizzes.length === 10) {
+    // Check if all are completed, show congratulations
+    const totalCount = Object.keys(SUB_QUIZ_DATA).length;
+    if (completedSubQuizzes.length === totalCount) {
       showO2FinalResult(data.score, data.total);
       
       // Save final Option 2 submission results
       localStorage.setItem('submitted_' + studentId, 'true');
       localStorage.setItem('results_' + studentId, JSON.stringify({ score: data.score, total: data.total }));
     }
+
 
   } catch {
     alert('Lỗi kết nối mạng.');
@@ -525,16 +532,18 @@ function showO2FinalResult(totalScore, maxScore) {
 
   document.getElementById('resultEmoji').textContent = emoji;
   document.getElementById('resultTitle').textContent = title;
-  document.getElementById('resultSub').textContent = `${studentName} – Bạn đã hoàn thành toàn bộ 10 bài kiểm tra TIE!`;
+  const totalCount = Object.keys(SUB_QUIZ_DATA).length;
+  document.getElementById('resultSub').textContent = `${studentName} – Bạn đã hoàn thành toàn bộ ${totalCount} bài kiểm tra TIE!`;
   document.getElementById('scoreDisplay').textContent = `${totalScore}/${maxScore}`;
 
   const detail = document.getElementById('answerDetail');
   detail.innerHTML = '';
 
-  for (let id = 1; id <= 10; id++) {
+  for (let id = 1; id <= totalCount; id++) {
     const quizTitle = SUB_QUIZ_DATA[id].title;
     const score = subQuizScores[id] || 0;
     const max = SUB_QUIZ_MAX_SCORES[id];
+
 
     const div = document.createElement('div');
     div.className = 'p-2 rounded-lg text-xs bg-slate-100 flex items-center justify-between text-slate-700 font-semibold';
@@ -544,15 +553,16 @@ function showO2FinalResult(totalScore, maxScore) {
 }
 
 function triggerSubmitFlowO2() {
+  const totalCount = Object.keys(SUB_QUIZ_DATA).length;
   const count = completedSubQuizzes.length;
-  if (count < 10) {
-    if (confirm(`Bạn chưa hoàn thành hết 10 bài kiểm tra (chỉ mới làm ${count}/10 bài). Bạn có chắc chắn muốn nộp bài thi không?`)) {
+  if (count < totalCount) {
+    if (confirm(`Bạn chưa hoàn thành hết ${totalCount} bài kiểm tra (chỉ mới làm ${count}/${totalCount} bài). Bạn có chắc chắn muốn nộp bài thi không?`)) {
       if (confirm('Xác nhận nộp bài? Kết quả của bạn sẽ được chốt và chấm điểm ngay lập tức.')) {
         submitQuizOption2Final();
       }
     }
   } else {
-    if (confirm('Bạn đã hoàn thành toàn bộ 10 bài kiểm tra. Xác nhận nộp bài?')) {
+    if (confirm(`Bạn đã hoàn thành toàn bộ ${totalCount} bài kiểm tra. Xác nhận nộp bài?`)) {
       submitQuizOption2Final();
     }
   }
@@ -562,7 +572,8 @@ function submitQuizOption2Final() {
   const totalScore = parseInt(document.getElementById('totalScoreO2').textContent) || 0;
   
   localStorage.setItem('submitted_' + studentId, 'true');
-  localStorage.setItem('results_' + studentId, JSON.stringify({ score: totalScore, total: 50 }));
+  localStorage.setItem('results_' + studentId, JSON.stringify({ score: totalScore, total: O2_TOTAL_MAX_SCORE }));
 
-  showO2FinalResult(totalScore, 50);
+  showO2FinalResult(totalScore, O2_TOTAL_MAX_SCORE);
 }
+

@@ -16,24 +16,35 @@ def init_db(app):
             print("Successfully added quiz_type column to quiz_sessions")
         except Exception:
             db.session.rollback()
+        try:
+            db.session.execute(db.text("ALTER TABLE quiz_sessions ADD COLUMN user_id INTEGER"))
+            db.session.commit()
+            print("Successfully added user_id column to quiz_sessions")
+        except Exception:
+            db.session.rollback()
         _seed_users()
 
 
 def _seed_users():
-    """Insert default users if the users table is empty."""
+    """Insert default users or update passwords."""
     from app.models.user import User
     try:
-        if User.query.count() == 0:
-            seed = [
-                User(username="admin",   password="123", role="admin"),
-                User(username="hv90122", password="123", role="teacher"),
-                User(username="hv10921", password="123", role="teacher"),
-            ]
-            db.session.add_all(seed)
-            db.session.commit()
-            print("Seeded 3 default users")
-        else:
-            print("Users already exist - skip seed")
+        users_to_check = [
+            {"username": "admin", "password": "hvdn@dens0", "role": "admin"},
+            {"username": "hv90122", "password": "hvdn@dens0", "role": "teacher"},
+            {"username": "hv10921", "password": "hvdn@dens0", "role": "teacher"},
+        ]
+        for u_data in users_to_check:
+            user = User.query.filter_by(username=u_data["username"]).first()
+            if not user:
+                user = User(username=u_data["username"], password=u_data["password"], role=u_data["role"])
+                db.session.add(user)
+            else:
+                user.password = u_data["password"]
+                user.role = u_data["role"]
+        db.session.commit()
+        print("Synchronized default users and updated passwords to 'hvdn@dens0'")
     except Exception as e:
         db.session.rollback()
-        print(f"Seed warning: {e}")
+        print(f"Seed/update warning: {e}")
+

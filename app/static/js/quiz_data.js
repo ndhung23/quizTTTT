@@ -46,7 +46,7 @@ const SUB_QUIZ_DATA = {
   4: {
     title: "Bài 4: Thao tác tiêu chuẩn",
     type: "matching",
-    left: ["Trình tự thao tác", "Machine time", "Tiêu chuẩn cầm tay", "Phiếu kết hợp thao tác tiêu chuẩn", "Takt time"],
+    left: ["Trình tự thao tác", "Machine time", "Tiêu chuẩn chờ tay", "Phiếu kết hợp thao tác tiêu chuẩn", "Takt time"],
     right: [
       { id: "A", text: "Là 1 trong 3 yếu tố của thao tác tiêu chuẩn , và là trình tự thao tác mà người thao tác có thể sản suất ra sản phẩm tốt một cách hiệu quả nhất." },
       { id: "B", text: "Là thời gian cần thiết của máy để gia công ra 1 sản phẩm. Ở các máy thông thường thì, sau khi ấn nút khởi động thì máy sẽ thực hiện gia công sản phẩm , và sẽ tự động khôi phục lại ở vị trí ban đầu" },
@@ -57,70 +57,49 @@ const SUB_QUIZ_DATA = {
     correct: { 0: "A", 1: "B", 2: "C", 3: "D", 4: "E" }
   },
   5: {
-    title: "Bài 5: 8 hạng mục cơ bản",
-    type: "matching",
-    left: [
-      "Bản quản lý sản lượng", "Bản kế hoạch cải tiến", "Bản thao tác tiêu chuẩn", "Andon", "Tiến độ sản xuất",
-      "Quản lý lượng tồn kho", "Hiệu xuất hoạt động", "Biểu đồ quản lý công số", "Cấu thành dây chuyền sản xuất"
-    ],
-    right: [
-      { id: "A", text: "Thông báo bất thường từ sản lượng của mỗi giờ" },
-      { id: "B", text: "Đối sách về các vấn đề đã phát sinh trong thực tế" },
-      { id: "C", text: "Xác minh rõ về qui định thao tác" },
-      { id: "D", text: "Thông báo chỉ thị thao tác, Hiện trạng hoạt động của dây chuyền" },
-      { id: "E", text: "Xác nhận rõ sự tiến triễn và chậm trễ của sản xuất" },
-      { id: "F", text: "Phát hiện bất thường theo sự tăng giảm của lượng tồn kho" },
-      { id: "G", text: "Xác minh rõ về nguyên nhân chính không hoạt động của thiết bị" },
-      { id: "H", text: "Quản lý hiện trạng sản xuất đạt được hằng ngày." },
-      { id: "I", text: "Cân bằng thời gian yêu cầu ở mỗi dây chuyền" }
-    ],
-    correct: { 0: "A", 1: "B", 2: "C", 3: "D", 4: "E", 5: "F", 6: "G", 7: "H", 8: "I" }
-  },
-  6: {
-    title: "Bài 6: Mục đích phân tích động tác",
+    title: "Bài 5: Mục đích phân tích động tác",
     type: "fill",
     text: "Động tác ・thao tác được nhìn quen mỗi ngày thì có thể nhớ nhưng những lãng phí của động tác nhỏ thì hầu như không nhìn thấy được. Và vì là những lãng phí nhỏ nên hầu như ai cũng nghĩ rằng sẽ không gây ảnh hưởng đến năng suất sản xuất. Tuy nhiên nếu tích tụ {0} lại và thực hiện trong 1 ngày thì sẽ là nguyên nhân dẫn đến {1}.",
     options: ["những lãng phí nhỏ", "Tổn thất lớn về thời gian", "Lợi ích lớn"],
     correct: { 0: "những lãng phí nhỏ", 1: "Tổn thất lớn về thời gian" }
   },
-  7: {
-    title: "Bài 7: Cấu thành thao tác",
+  6: {
+    title: "Bài 6: Cấu thành thao tác",
     type: "single_choice_image",
     image: "/static/q7.png",
-    options: ["(1)", "(2)", "(3)", "(4)"],
-    correct: { 0: "(4)" }
+    options: ["(A)", "(B)", "(C)", "(D)"],
+    correct: { 0: "(D)" }
+  },
+  7: {
+    title: "Bài 7: 4 nguyên tắc cải thiện",
+    type: "custom_inputs_image",
+    image: "/static/q71.png",
+    desc: "Nhập chữ cái đúng (A, B, C, D, E) cho 4 nguyên tắc từ trên xuống dưới:",
+    placeholder: "Nhập chữ cái...",
+    inputs: ["Nguyên tắc 1", "Nguyên tắc 2", "Nguyên tắc 3", "Nguyên tắc 4"],
+    correct: { "Nguyên tắc 1": "C", "Nguyên tắc 2": "A", "Nguyên tắc 3": "D", "Nguyên tắc 4": "E" }
   },
   8: {
-    title: "Bài 8: 4 nguyên tắc cải thiện",
-    type: "matching",
-    left: ["Loại bỏ (Lượt bớt)", "Kết hợp", "Thay thế (Thay đổi)", "Đơn giản"],
-    right: [
-      { id: "A", text: "If loại bỏ vật lãng phí hoặc dừng thao tác không cần thiết (Ví dụ: Loại bỏ kiểm tra bề ngoài không cần thiết)" },
-      { id: "B", text: "Nếu thử thu thập, kết hợp lại hoặc thực hiện đồng thời (Ví dụ: Đồng thời hóa việc khoan lỗ với việc ép dập)" },
-      { id: "C", text: "Nếu thay thế trình tự, thay đổi cách làm hoặc thay thế vật khác (Ví dụ: Mang đến phía trước công đoạn kiểm tra)" },
-      { id: "D", text: "Nếu làm ngắn gọn, đơn giản hoặc giảm số lượng (Ví dụ: Phân công việc đảm nhiệm, làm một cách đơn giản)" }
-    ],
-    correct: { 0: "A", 1: "B", 2: "C", 3: "D" }
-  },
-  9: {
-    title: "Bài 9: Cải thiện động tác cơ bản",
+    title: "Bài 8: Cải thiện động tác cơ bản",
     type: "tf",
+    desc: "Hãy chọn O vào vấn đề đúng và đánh dấu X vào vấn đề sai về phương pháp quan sát động tác",
     questions: [
-      { id: "1", text: "Trình tự của động tác là phương pháp quan sát động tác Đúng?" },
-      { id: "2", text: "Độ lớn của động tác là phương pháp quan sát động tác Đúng?" },
-      { id: "3", text: "Độ dễ của động tác là phương pháp quan sát động tác Đúng?" },
-      { id: "4", text: "Độ khó của động tác là phương pháp quan sát động tác Đúng?" },
-      { id: "5", text: "Phương pháp quan sát động tác là phương pháp quan sát động tác Đúng?" }
+      { id: "1", text: "Độ khó của động tác là phương pháp quan sát động tác Đúng?" },
+      { id: "2", text: "Độ dễ của động tác là phương pháp quan sát động tác Đúng?" },
+      { id: "3", text: "Độ lớn của động tác là phương pháp quan sát động tác Đúng?" },
+      { id: "4", text: "Trình tự của động tác là phương pháp quan sát động tác Đúng?" },
+      { id: "5", text: "Phương pháp của động tác là phương pháp quan sát động tác Đúng?" }
     ],
     correct: { "1": "O", "2": "X", "3": "O", "4": "O", "5": "O" }
   },
-  10: {
-    title: "Bài 10: Giới hạn sản lượng",
+  9: {
+    title: "Bài 9: Giới hạn sản lượng",
     type: "custom_inputs_image",
     image: "/static/q10.png",
     inputs: ["A", "B", "C", "D"],
     correct: { "A": "180", "B": "162", "C": "150", "D": "135" }
   }
+
 };
 
 const O1_TEXTS = {
@@ -157,7 +136,7 @@ const O1_TEXTS = {
     "Lấy terminal ngắn từ khay",
     "Set terminal ngắn vào khuôn trong",
     "Lấy terminal dài từ khay",
-    "Set terminal dài vào khuôn",
+    "Set terminal dài vào khuôn trong",
     "Lấy súng khí làm sạch khuôn",
     "Lấy jig set Bush từ vị trí để jig \n(Áp dụng máy đúc số 3)",
     "Chỉnh jig",

@@ -6,7 +6,7 @@ let dO1Item = null;
 function initOption1() {
   renderOption1Pools();
   renderOption1Grid();
-  updateOption1Progress();
+  refreshGridAndPools();
 }
 
 function renderOption1Pools() {
@@ -570,10 +570,10 @@ function showO1Results(data) {
     const correct_reason = step_num;
 
     const ok = (row.image_id === correct_img && 
-                row.left_id === correct_left && 
-                row.right_id === correct_right && 
-                row.note_id === correct_note && 
-                row.reason_id === correct_reason);
+                row.left_id && O1_TEXTS.left[row.left_id - 1] === O1_TEXTS.left[correct_left - 1] && 
+                row.right_id && O1_TEXTS.right[row.right_id - 1] === O1_TEXTS.right[correct_right - 1] && 
+                row.note_id && O1_TEXTS.note[row.note_id - 1] === O1_TEXTS.note[correct_note - 1] && 
+                row.reason_id && O1_TEXTS.reason[row.reason_id - 1] === O1_TEXTS.reason[correct_reason - 1]);
 
     const div = document.createElement('div');
     div.className = `p-2.5 rounded-xl text-xs ${ok ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`;

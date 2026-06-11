@@ -225,6 +225,7 @@
     async function startQuiz() {
       const btn = document.getElementById('startBtn');
       const quizType = document.getElementById('quizTypeSelect').value;
+      const username = sessionStorage.getItem('username'); // Fetch username
       btn.disabled = true;
       btn.textContent = 'Đang tạo...';
 
@@ -232,8 +233,9 @@
         const res = await fetch('/quiz/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quiz_type: quizType })
+          body: JSON.stringify({ quiz_type: quizType, username: username })
         });
+
         const data = await res.json();
 
         currentCode = data.code;
@@ -358,8 +360,10 @@
     // Try to restore active session on load
     (async () => {
       try {
-        const res = await fetch('/quiz/active');
+        const username = sessionStorage.getItem('username'); // Fetch username
+        const res = await fetch('/quiz/active?username=' + encodeURIComponent(username || ''));
         const data = await res.json();
+
         if (data.active) {
           currentCode = data.code;
           document.getElementById('quizCode').textContent = data.code;
