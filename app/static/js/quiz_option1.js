@@ -11,21 +11,30 @@ function initOption1() {
 
 function renderOption1Pools() {
   let startId, endId;
-  if (currentPart === 1) {
-    startId = 1; endId = 7;
-  } else if (currentPart === 2) {
-    startId = 8; endId = 15;
+  if (activeQuizSteps.length === 23) {
+    // Keep original Option 1 parts exactly as they were
+    if (currentPart === 1) {
+      startId = 1; endId = 7;
+    } else if (currentPart === 2) {
+      startId = 8; endId = 15;
+    } else {
+      startId = 16; endId = 23;
+    }
   } else {
-    startId = 16; endId = 23;
+    // Generic pagination (8 steps per part)
+    const stepsPerPage = 8;
+    startId = (currentPart - 1) * stepsPerPage + 1;
+    endId = Math.min(currentPart * stepsPerPage, activeQuizSteps.length);
   }
 
-  const imgIds = [];
-  for (let i = startId; i <= endId; i++) imgIds.push(i);
-  const images = shuffle(imgIds.map(x => ({id: x, src: `/images/${x}.png`})));
-  const lefts = shuffle(O1_TEXTS.left.slice(startId - 1, endId).map((x, i) => ({id: startId + i, text: x})));
-  const rights = shuffle(O1_TEXTS.right.slice(startId - 1, endId).map((x, i) => ({id: startId + i, text: x})));
-  const notes = shuffle(O1_TEXTS.note.slice(startId - 1, endId).map((x, i) => ({id: startId + i, text: x})));
-  const reasons = shuffle(O1_TEXTS.reason.slice(startId - 1, endId).map((x, i) => ({id: startId + i, text: x})));
+  // Slice from activeQuizSteps (startId to endId)
+  const activeSlice = activeQuizSteps.slice(startId - 1, endId);
+
+  const images = shuffle(activeSlice.map(s => ({id: s.step_num, src: s.image_url})));
+  const lefts = shuffle(activeSlice.map(s => ({id: s.step_num, text: s.left_text})));
+  const rights = shuffle(activeSlice.map(s => ({id: s.step_num, text: s.right_text})));
+  const notes = shuffle(activeSlice.map(s => ({id: s.step_num, text: s.note_text})));
+  const reasons = shuffle(activeSlice.map(s => ({id: s.step_num, text: s.reason_text})));
 
   // Render Images Pool
   const imgPool = document.getElementById('poolImages');
@@ -118,12 +127,18 @@ function onO1DragEnd() {
 
 function renderOption1Grid() {
   let startIdx, endIdx;
-  if (currentPart === 1) {
-    startIdx = 0; endIdx = 6;
-  } else if (currentPart === 2) {
-    startIdx = 7; endIdx = 14;
+  if (activeQuizSteps.length === 23) {
+    if (currentPart === 1) {
+      startIdx = 0; endIdx = 6;
+    } else if (currentPart === 2) {
+      startIdx = 7; endIdx = 14;
+    } else {
+      startIdx = 15; endIdx = 22;
+    }
   } else {
-    startIdx = 15; endIdx = 22;
+    const stepsPerPage = 8;
+    startIdx = (currentPart - 1) * stepsPerPage;
+    endIdx = Math.min(currentPart * stepsPerPage - 1, activeQuizSteps.length - 1);
   }
 
   // 1. Render Desktop Table
@@ -251,7 +266,7 @@ function createTableCell(rowIdx, colName) {
 
 function placeItem(id, row, col) {
   // First, check if this ID is already placed elsewhere in this column. If so, clear it.
-  for (let r = 0; r < 23; r++) {
+  for (let r = 0; r < activeQuizSteps.length; r++) {
     if (gridPlacement[r][col] === id) {
       gridPlacement[r][col] = null;
     }
@@ -281,9 +296,9 @@ function refreshGridAndPools() {
     reason_id: new Set()
   };
 
-  for (let r = 0; r < 23; r++) {
+  for (let r = 0; r < activeQuizSteps.length; r++) {
     for (const key in used) {
-      if (gridPlacement[r][key] !== null) {
+      if (gridPlacement[r] && gridPlacement[r][key] !== null) {
         used[key].add(gridPlacement[r][key]);
       }
     }
@@ -304,7 +319,7 @@ function refreshGridAndPools() {
   document.querySelectorAll('.drop-cell').forEach(cell => {
     const row = parseInt(cell.dataset.row);
     const col = cell.dataset.col;
-    const val = gridPlacement[row][col];
+    const val = gridPlacement[row] ? gridPlacement[row][col] : null;
 
     cell.className = 'drop-cell border rounded-2xl flex items-center justify-center p-3 text-center text-xs transition cursor-pointer';
     cell.innerHTML = '';
@@ -314,14 +329,18 @@ function refreshGridAndPools() {
       cell.textContent = col === 'image_id' ? 'Chọn hình ảnh...' : 'Chọn ô chữ...';
     } else {
       cell.classList.add('border-solid', 'border-blue-500/50', 'bg-blue-950/40', 'text-white');
+      const matchedStep = activeQuizSteps.find(s => s.step_num === val);
       if (col === 'image_id') {
-        cell.innerHTML = `<img src="/images/${val}.png" class="w-full aspect-[4/3] object-cover rounded-lg" />`;
+        const imgSrc = matchedStep ? matchedStep.image_url : '';
+        cell.innerHTML = `<img src="${imgSrc}" class="w-full aspect-[4/3] object-cover rounded-lg" />`;
       } else {
         let text = '';
-        if (col === 'left_id') text = O1_TEXTS.left[val - 1];
-        else if (col === 'right_id') text = O1_TEXTS.right[val - 1];
-        else if (col === 'note_id') text = O1_TEXTS.note[val - 1];
-        else if (col === 'reason_id') text = O1_TEXTS.reason[val - 1];
+        if (matchedStep) {
+          if (col === 'left_id') text = matchedStep.left_text;
+          else if (col === 'right_id') text = matchedStep.right_text;
+          else if (col === 'note_id') text = matchedStep.note_text;
+          else if (col === 'reason_id') text = matchedStep.reason_text;
+        }
         cell.textContent = text;
       }
     }
@@ -347,41 +366,47 @@ function openSelectionModal(rowIdx, colName) {
   title.textContent = `Chọn ${colLabel} - Bước ${rowIdx + 1}`;
 
   const usedIds = new Set();
-  for (let r = 0; r < 23; r++) {
-    if (r !== rowIdx && gridPlacement[r][colName] !== null) {
+  for (let r = 0; r < activeQuizSteps.length; r++) {
+    if (r !== rowIdx && gridPlacement[r] && gridPlacement[r][colName] !== null) {
       usedIds.add(gridPlacement[r][colName]);
     }
   }
 
   optionsDiv.innerHTML = '';
-  const currentVal = gridPlacement[rowIdx][colName];
+  const currentVal = gridPlacement[rowIdx] ? gridPlacement[rowIdx][colName] : null;
 
   let startId, endId;
-  if (currentPart === 1) {
-    startId = 1; endId = 7;
-  } else if (currentPart === 2) {
-    startId = 8; endId = 15;
+  if (activeQuizSteps.length === 23) {
+    if (currentPart === 1) {
+      startId = 1; endId = 7;
+    } else if (currentPart === 2) {
+      startId = 8; endId = 15;
+    } else {
+      startId = 16; endId = 23;
+    }
   } else {
-    startId = 16; endId = 23;
+    const stepsPerPage = 8;
+    startId = (currentPart - 1) * stepsPerPage + 1;
+    endId = Math.min(currentPart * stepsPerPage, activeQuizSteps.length);
   }
 
   let availableItems = [];
   if (colName === 'image_id') {
-    for (let id = startId; id <= endId; id++) {
-      if (!usedIds.has(id)) {
-        availableItems.push({ id, src: `/images/${id}.png` });
-      }
-    }
-  } else {
-    let textArr = [];
-    if (colName === 'left_id') textArr = O1_TEXTS.left;
-    else if (colName === 'right_id') textArr = O1_TEXTS.right;
-    else if (colName === 'note_id') textArr = O1_TEXTS.note;
-    else if (colName === 'reason_id') textArr = O1_TEXTS.reason;
-
-    textArr.forEach((text, i) => {
-      const id = i + 1;
+    activeQuizSteps.forEach(s => {
+      const id = s.step_num;
       if (id >= startId && id <= endId && !usedIds.has(id)) {
+        availableItems.push({ id, src: s.image_url });
+      }
+    });
+  } else {
+    activeQuizSteps.forEach(s => {
+      const id = s.step_num;
+      if (id >= startId && id <= endId && !usedIds.has(id)) {
+        let text = '';
+        if (colName === 'left_id') text = s.left_text;
+        else if (colName === 'right_id') text = s.right_text;
+        else if (colName === 'note_id') text = s.note_text;
+        else if (colName === 'reason_id') text = s.reason_text;
         availableItems.push({ id, text });
       }
     });
@@ -444,12 +469,21 @@ function closeSelectionModal() {
 
 function updateOption1Progress() {
   let filled = 0;
-  for (let r = 0; r < 23; r++) {
+  for (let r = 0; r < activeQuizSteps.length; r++) {
     for (const key in gridPlacement[r]) {
       if (gridPlacement[r][key] !== null) filled++;
     }
   }
-  document.getElementById('progressTextO1').textContent = `Đã xếp: ${filled}/115 ô (Phần ${currentPart}/3)`;
+  const totalCells = activeQuizSteps.length * 5;
+
+  let totalParts = 1;
+  if (activeQuizSteps.length === 23) {
+    totalParts = 3;
+  } else {
+    totalParts = Math.ceil(activeQuizSteps.length / 8);
+  }
+
+  document.getElementById('progressTextO1').textContent = `Đã xếp: ${filled}/${totalCells} ô (Phần ${currentPart}/${totalParts})`;
   
   const btnPrev = document.getElementById('prevBtnO1');
   const btnNext = document.getElementById('nextBtnO1');
@@ -457,14 +491,14 @@ function updateOption1Progress() {
   
   if (btnPrev) btnPrev.disabled = (currentPart === 1);
   if (btnNext) {
-    if (currentPart === 3) {
+    if (currentPart === totalParts) {
       btnNext.textContent = 'Hoàn thành';
     } else {
       btnNext.textContent = 'Tiếp';
     }
   }
   if (btnSubmit) {
-    btnSubmit.disabled = (currentPart !== 3);
+    btnSubmit.disabled = (currentPart !== totalParts);
   }
 }
 
@@ -476,7 +510,8 @@ function goToPrevPart() {
 }
 
 function goToNextPart() {
-  if (currentPart < 3) {
+  let totalParts = activeQuizSteps.length === 23 ? 3 : Math.ceil(activeQuizSteps.length / 8);
+  if (currentPart < totalParts) {
     currentPart++;
     initOption1();
   } else {
@@ -486,14 +521,15 @@ function goToNextPart() {
 
 function triggerSubmitFlow() {
   let filled = 0;
-  for (let r = 0; r < 23; r++) {
+  for (let r = 0; r < activeQuizSteps.length; r++) {
     for (const key in gridPlacement[r]) {
       if (gridPlacement[r][key] !== null) filled++;
     }
   }
+  const totalCells = activeQuizSteps.length * 5;
 
-  if (filled < 115) {
-    if (confirm(`Bạn chưa hoàn thành hết bài thi (chỉ mới xếp được ${filled}/115 ô). Bạn có chắc chắn muốn nộp bài không?`)) {
+  if (filled < totalCells) {
+    if (confirm(`Bạn chưa hoàn thành hết bài thi (chỉ mới xếp được ${filled}/${totalCells} ô). Bạn có chắc chắn muốn nộp bài không?`)) {
       if (confirm('Xác nhận nộp bài? Nhấn OK để gửi kết quả bài thi.')) {
         submitQuizOption1();
       }
@@ -506,12 +542,10 @@ function triggerSubmitFlow() {
 }
 
 async function submitQuizOption1() {
-  const filled = 35;
   const btn = document.getElementById('submitBtnO1');
   btn.disabled = true;
   btn.textContent = 'Đang nộp...';
 
-  // Format payload: list of row configurations
   const answerOrder = gridPlacement.map((row, i) => ({
     row_idx: i,
     image_id: row.image_id,
@@ -548,32 +582,53 @@ function showO1Results(data) {
   document.getElementById('screenOption1').classList.add('hidden');
   document.getElementById('screenResult').classList.remove('hidden');
 
-  const pct = Math.round(data.score / 23 * 100);
+  const pct = Math.round(data.score / activeQuizSteps.length * 100);
   const emoji = pct === 100 ? '🏆' : pct >= 70 ? '🎉' : pct >= 40 ? '👍' : '💪';
   const title = pct === 100 ? 'Hoàn hảo!' : pct >= 70 ? 'Xuất sắc!' : pct >= 40 ? 'Khá tốt!' : 'Cố gắng hơn!';
 
   document.getElementById('resultEmoji').textContent = emoji;
   document.getElementById('resultTitle').textContent = title;
-  document.getElementById('resultSub').textContent = `${studentName} – ${data.score}/23 đúng (${pct}%)`;
-  document.getElementById('scoreDisplay').textContent = `${data.score}/23`;
+  document.getElementById('resultSub').textContent = `${studentName} – ${data.score}/${activeQuizSteps.length} đúng (${pct}%)`;
+  document.getElementById('scoreDisplay').textContent = `${data.score}/${activeQuizSteps.length}`;
 
   const detail = document.getElementById('answerDetail');
   detail.innerHTML = '';
 
-  for (let r = 0; r < 23; r++) {
+  for (let r = 0; r < activeQuizSteps.length; r++) {
     const row = gridPlacement[r];
-    const step_num = r + 1;
-    const correct_img = step_num;
-    const correct_left = step_num;
-    const correct_right = step_num;
-    const correct_note = step_num;
-    const correct_reason = step_num;
+    const correct_step = activeQuizSteps[r];
 
-    const ok = (row.image_id === correct_img && 
-                row.left_id && O1_TEXTS.left[row.left_id - 1] === O1_TEXTS.left[correct_left - 1] && 
-                row.right_id && O1_TEXTS.right[row.right_id - 1] === O1_TEXTS.right[correct_right - 1] && 
-                row.note_id && O1_TEXTS.note[row.note_id - 1] === O1_TEXTS.note[correct_note - 1] && 
-                row.reason_id && O1_TEXTS.reason[row.reason_id - 1] === O1_TEXTS.reason[correct_reason - 1]);
+    let img_ok = false;
+    if (row.image_id) {
+      const placedStep = activeQuizSteps.find(s => s.step_num === row.image_id);
+      img_ok = placedStep && (placedStep.image_url === correct_step.image_url);
+    }
+    
+    let left_ok = false;
+    if (row.left_id) {
+      const placedStep = activeQuizSteps.find(s => s.step_num === row.left_id);
+      left_ok = placedStep && (placedStep.left_text === correct_step.left_text);
+    }
+    
+    let right_ok = false;
+    if (row.right_id) {
+      const placedStep = activeQuizSteps.find(s => s.step_num === row.right_id);
+      right_ok = placedStep && (placedStep.right_text === correct_step.right_text);
+    }
+    
+    let note_ok = false;
+    if (row.note_id) {
+      const placedStep = activeQuizSteps.find(s => s.step_num === row.note_id);
+      note_ok = placedStep && (placedStep.note_text === correct_step.note_text);
+    }
+    
+    let reason_ok = false;
+    if (row.reason_id) {
+      const placedStep = activeQuizSteps.find(s => s.step_num === row.reason_id);
+      reason_ok = placedStep && (placedStep.reason_text === correct_step.reason_text);
+    }
+
+    const ok = img_ok && left_ok && right_ok && note_ok && reason_ok;
 
     const div = document.createElement('div');
     div.className = `p-2.5 rounded-xl text-xs ${ok ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`;

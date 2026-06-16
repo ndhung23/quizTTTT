@@ -82,6 +82,7 @@ const SUB_QUIZ_DATA = {
   8: {
     title: "Bài 8: Cải thiện động tác cơ bản",
     type: "tf",
+    image: "/static/q8.png",
     desc: "Hãy chọn O vào vấn đề đúng và đánh dấu X vào vấn đề sai về phương pháp quan sát động tác",
     questions: [
       { id: "1", text: "Độ khó của động tác là phương pháp quan sát động tác Đúng?" },
@@ -90,14 +91,26 @@ const SUB_QUIZ_DATA = {
       { id: "4", text: "Trình tự của động tác là phương pháp quan sát động tác Đúng?" },
       { id: "5", text: "Phương pháp của động tác là phương pháp quan sát động tác Đúng?" }
     ],
-    correct: { "1": "O", "2": "X", "3": "O", "4": "O", "5": "O" }
+    correct: { "1": "O", "2": "X", "3": "O", "4": "O", "5": "X" }
   },
   9: {
     title: "Bài 9: Giới hạn sản lượng",
     type: "custom_inputs_image",
     image: "/static/q10.png",
-    inputs: ["A", "B", "C", "D"],
-    correct: { "A": "180", "B": "162", "C": "150", "D": "135" }
+    desc: "Nhập số thích hợp vào các ô từ 1 đến 10:",
+    inputs: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+    correct: {
+      "1": "20",
+      "2": "180",
+      "3": "180",
+      "4": "90",
+      "5": "162",
+      "6": "20",
+      "7": "150",
+      "8": "150",
+      "9": "90",
+      "10": "135"
+    }
   }
 
 };

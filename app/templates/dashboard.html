@@ -3,21 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DENSO Quiz – Dashboard Giảng viên</title>
+  <title>Quiz – Admin Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 1);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(203, 213, 225, 1);
+      border-radius: 4px;
+    }
     @media print {
       body {
         background: white !important;
         color: black !important;
-        font-family: sans-serif;
       }
-      nav, 
-      .max-w-5xl > :not(#resultsCard), 
+      /* Hide unnecessary elements on print */
+      #sidebar, 
+      #nav-header,
+      #tab-sessions > :not(#resultsCardContainer),
+      #tab-accounts,
+      #tab-quizzes,
       #liveLabel,
       #btnPrintResults,
       #resultsCard h2 {
         display: none !important;
+      }
+      /* Reset parents layout so they don't add padding/margins on print */
+      #main-content,
+      #main-content > div {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+      }
+      #resultsCardContainer {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
       }
       #resultsCard {
         box-shadow: none !important;
@@ -45,187 +76,570 @@
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
-      th:nth-child(1), td:nth-child(1),
-      th:nth-child(3), td:nth-child(3) {
-        text-align: center !important;
-      }
-      .w-24.bg-gray-200 {
-        display: none !important;
-      }
-      th:nth-child(4), td:nth-child(4) {
-        display: none !important;
-      }
       #printHeader, #printFooter {
         display: block !important;
       }
     }
   </style>
 </head>
-<body class="min-h-screen bg-gray-100">
+<body class="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800">
 
-  <!-- Navbar -->
-  <nav class="bg-blue-700 text-white px-6 py-4 flex items-center justify-between shadow-md">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-        <span class="text-blue-700 font-bold text-sm">D</span>
+  <!-- Left Sidebar -->
+  <aside id="sidebar" class="w-0 opacity-0 pointer-events-none overflow-hidden bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20 flex-shrink-0 transition-all duration-300 ease-in-out">
+    <!-- Sidebar Header -->
+    <div class="px-6 py-5 flex items-center gap-3 border-b border-slate-800">
+      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
+        <span class="text-white font-black text-base">Q</span>
       </div>
-      <span class="font-bold text-lg">DENSO Quiz – Giảng viên</span>
+      <span class="font-extrabold text-lg tracking-wider text-white">QUIZ</span>
     </div>
-    <button onclick="logout()" class="text-sm bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg transition">
-      Đăng xuất
-    </button>
-  </nav>
 
-  <div class="max-w-5xl mx-auto p-6 space-y-6">
+    <!-- Active User Info -->
+    <div class="px-6 py-4 bg-slate-950/40 border-b border-slate-800/60 flex flex-col">
+      <span class="text-xs text-slate-500 uppercase tracking-widest font-bold">Người dùng</span>
+      <span id="sidebarUsername" class="font-bold text-white mt-0.5">——</span>
+      <span id="sidebarRole" class="text-xs text-blue-400 font-semibold uppercase mt-0.5">——</span>
+    </div>
 
-    <!-- Control Card -->
-    <div class="bg-white rounded-2xl shadow p-6">
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Quản lý buổi học</h2>
+    <!-- Sidebar Menu -->
+    <nav class="flex-1 px-4 py-4 space-y-1">
+      <button onclick="switchTab('sessions')" id="menu-sessions" 
+        class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition bg-blue-600 text-white shadow-lg shadow-blue-600/10">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+        Quản lý buổi học
+      </button>
 
-      <div class="flex flex-wrap gap-4 items-end mb-6">
-        <div class="flex flex-col gap-1.5 min-w-[280px]">
-          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Chọn loại bài kiểm tra để giao</label>
-          <select id="quizTypeSelect" class="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 font-semibold text-gray-700 focus:outline-none focus:border-blue-500 transition shadow-sm">
-            <option value="option1">Kiểm tra thao tác đúc</option>
-            <option value="option2">Kiểm tra TIE</option>
+      <button onclick="switchTab('accounts')" id="menu-accounts" 
+        class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition hover:bg-slate-800 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        Quản lý tài khoản
+      </button>
+
+      <button onclick="switchTab('quizzes')" id="menu-quizzes" 
+        class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition hover:bg-slate-800 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Quản lý đề thi
+      </button>
+    </nav>
+
+    <!-- Logout Action -->
+    <div class="p-4 border-t border-slate-800">
+      <button onclick="logout()" 
+        class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-red-900/40 hover:text-red-200 transition text-slate-300">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Đăng xuất
+      </button>
+    </div>
+  </aside>
+
+  <!-- Right Content Area -->
+  <main id="main-content" class="flex-1 flex flex-col min-w-0 min-h-screen">
+    <!-- Top Header Bar -->
+    <header id="nav-header" class="bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shadow-sm z-10">
+      <div class="flex items-center gap-3">
+        <!-- Sidebar Toggle Button -->
+        <button id="sidebarToggle" onclick="toggleSidebar()" class="text-slate-600 hover:text-slate-900 hover:bg-slate-100 p-2.5 rounded-xl transition duration-200 active:scale-95 focus:outline-none flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        <h1 id="pageTitle" class="text-xl font-extrabold text-slate-900 tracking-tight">Quản lý buổi học</h1>
+      </div>
+      <div class="flex items-center gap-4 text-sm font-medium">
+        <div class="hidden sm:flex items-center gap-2 text-slate-400">
+          <span>Hệ thống Quiz</span>
+          <span>•</span>
+          <span id="currentDateStr">16/06/2026</span>
+        </div>
+        <!-- Top-Right Logout Button -->
+        <button onclick="logout()" class="text-xs bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-650 px-4 py-2.5 rounded-xl font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          <span>Đăng xuất</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="flex-1 p-8 space-y-8 overflow-y-auto">
+
+      <!-- ==================== TAB 1: SESSIONS ==================== -->
+      <section id="tab-sessions" class="space-y-6">
+        <!-- Control Card -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+          <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Giao bài kiểm tra mới
+          </h2>
+
+          <div class="flex flex-wrap gap-4 items-end mb-6">
+            <div class="flex flex-col gap-1.5 min-w-[280px]">
+              <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Chọn đề thi để giao</label>
+              <select id="quizTypeSelect" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition shadow-sm">
+                <!-- Loaded dynamically -->
+              </select>
+            </div>
+            <button id="startBtn" onclick="startQuiz()"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shadow-lg shadow-blue-500/10">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Giao bài mới
+            </button>
+            <button onclick="loadResults()"
+              class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              Làm mới kết quả
+            </button>
+          </div>
+
+          <!-- Session Info (Hidden on initial load) -->
+          <div id="sessionInfo" class="hidden border-t border-slate-100 pt-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- QR Code Card -->
+              <div class="lg:col-span-1 bg-blue-50/50 border border-blue-100 rounded-2xl p-6 text-center flex flex-col items-center justify-center">
+                <p class="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Mã phòng thi</p>
+                <p id="quizCode" class="text-4xl font-black text-blue-800 tracking-widest mb-1">——</p>
+                <span id="activeQuizTypeName" class="text-xs text-blue-700 font-bold bg-blue-100 px-3 py-1 rounded-full inline-block mb-4">——</span>
+                <div id="qrContainer" class="bg-white p-3 rounded-2xl border border-slate-150 shadow-sm mb-3">
+                  <img id="qrImage" src="" alt="QR Code" class="w-36 h-36 rounded-lg" />
+                </div>
+                <p class="text-xs text-slate-400">Học viên quét mã QR hoặc truy cập trang thi nhập mã trên để tham gia.</p>
+              </div>
+
+              <!-- Stats Cards -->
+              <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-5 text-center flex flex-col justify-center">
+                  <p class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2">Đã tham gia</p>
+                  <p id="countJoined" class="text-4xl font-extrabold text-emerald-800">0</p>
+                  <p class="text-xs text-slate-400 mt-2">Học viên đã vào phòng</p>
+                </div>
+                <div class="bg-amber-50/50 border border-amber-100 rounded-2xl p-5 text-center flex flex-col justify-center">
+                  <p class="text-xs font-bold text-amber-600 uppercase tracking-wider mb-2">Đã nộp bài</p>
+                  <p id="countSubmitted" class="text-4xl font-extrabold text-amber-800">0</p>
+                  <p class="text-xs text-slate-400 mt-2">Số bài thi đã gửi</p>
+                </div>
+                <div class="bg-purple-50/50 border border-purple-100 rounded-2xl p-5 text-center flex flex-col justify-center">
+                  <p class="text-xs font-bold text-purple-600 uppercase tracking-wider mb-2">Điểm trung bình</p>
+                  <p id="avgScore" class="text-4xl font-extrabold text-purple-800">—</p>
+                  <p class="text-xs text-slate-400 mt-2">Tổng kết trung bình lớp</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Realtime Results Table Card -->
+        <div id="resultsCardContainer" class="hidden">
+          <div id="resultsCard" class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+            <!-- Print Header (Hidden on screen, visible on print) -->
+            <div id="printHeader" class="hidden text-black mb-6">
+              <h1 class="text-center font-bold text-2xl uppercase tracking-wider mb-4">Phiếu Kết Quả Đánh Giá Kỹ Năng</h1>
+              <div class="grid grid-cols-2 gap-y-2 text-sm font-semibold border-b-2 border-black pb-4 mb-2">
+                <div>Giảng viên đánh giá: <span id="printLecturerCode" class="font-normal">——</span></div>
+                <div class="text-right">Ngày đánh giá: <span id="printDate" class="font-normal">——</span></div>
+                <div>Loại bài kiểm tra: <span id="printQuizType" class="font-normal">——</span></div>
+                <div class="text-right">Mã phòng thi: <span id="printSessionCode" class="font-normal">——</span></div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center gap-3">
+                <h2 class="text-base font-bold text-slate-900">Kết quả thời gian thực</h2>
+                <span class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-semibold animate-pulse" id="liveLabel">● Tự động cập nhật 2s</span>
+              </div>
+              <button id="btnPrintResults" onclick="preparePrint()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-500/10 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                <span>In kết quả</span>
+              </button>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-sm">
+                <thead id="resultsTableHead">
+                  <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                    <th class="px-6 py-3.5 text-left rounded-l-xl w-16">Hạng</th>
+                    <th class="px-6 py-3.5 text-left">Học viên</th>
+                    <th class="px-6 py-3.5 text-center">Điểm</th>
+                    <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody id="resultsBody" class="divide-y divide-slate-100">
+                  <tr>
+                    <td colspan="4" class="text-center text-slate-400 py-8">Chưa có học viên nào tham gia</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== TAB 2: ACCOUNTS ==================== -->
+      <section id="tab-accounts" class="hidden space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Danh sách tài khoản
+            </h2>
+            <button onclick="openUserModal(false)" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-500/10">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+              </svg>
+              Thêm tài khoản
+            </button>
+          </div>
+
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                  <th class="px-6 py-3.5 text-left rounded-l-xl">ID</th>
+                  <th class="px-6 py-3.5 text-left">Tên đăng nhập</th>
+                  <th class="px-6 py-3.5 text-left">Mật khẩu</th>
+                  <th class="px-6 py-3.5 text-left">Vai trò</th>
+                  <th class="px-6 py-3.5 text-center rounded-r-xl w-48">Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="userTableBody" class="divide-y divide-slate-100">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== TAB 3: QUIZZES ==================== -->
+      <section id="tab-quizzes" class="hidden space-y-6">
+        <!-- Quiz list View -->
+        <div id="quizListView" class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span> Danh sách đề thi
+            </h2>
+            <button onclick="openQuizModal(false)" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-500/10">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+              </svg>
+              Thêm đề thi mới
+            </button>
+          </div>
+
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                  <th class="px-6 py-3.5 text-left rounded-l-xl">Mã đề thi</th>
+                  <th class="px-6 py-3.5 text-left">Tên đề thi</th>
+                  <th class="px-6 py-3.5 text-left">Định dạng</th>
+                  <th class="px-6 py-3.5 text-left">Loại đề</th>
+                  <th class="px-6 py-3.5 text-center rounded-r-xl w-56">Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="quizTableBody" class="divide-y divide-slate-100">
+                <!-- Loaded via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Quiz step Editor View (Hidden initially) -->
+        <div id="quizStepEditorView" class="hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-5">
+              <div>
+                <button onclick="backToQuizList()" class="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1 mb-1.5">
+                  ← Quay lại danh sách đề thi
+                </button>
+                <h2 id="editQuizTitle" class="text-xl font-bold text-slate-900">——</h2>
+                <p id="editQuizSub" class="text-xs text-slate-400 font-medium">Mã đề thi: <span class="font-bold text-slate-600" id="editQuizCode">——</span></p>
+              </div>
+              <button onclick="openStepModal(false)" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-500/10">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+                Thêm bước mới (STT)
+              </button>
+            </div>
+
+            <!-- Steps Table -->
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold uppercase tracking-wider">
+                    <th class="px-4 py-3 text-center rounded-l-xl w-12">STT</th>
+                    <th class="px-4 py-3 text-left w-24">Hình ảnh</th>
+                    <th class="px-4 py-3 text-left">Thao tác tay trái</th>
+                    <th class="px-4 py-3 text-left">Thao tác tay phải</th>
+                    <th class="px-4 py-3 text-left">Chú ý quan trọng</th>
+                    <th class="px-4 py-3 text-left">Lý do thực hiện</th>
+                    <th class="px-4 py-3 text-center rounded-r-xl w-32">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody id="stepsTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
+                  <!-- Loaded via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ==================== USER MODAL ==================== -->
+  <div id="userModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="userModalTitle" class="font-bold text-slate-900 text-base">Thêm tài khoản</h3>
+        <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <form id="userForm" class="p-6 space-y-4">
+        <input type="hidden" id="modalUserId" />
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tên đăng nhập</label>
+          <input type="text" id="modalUsername" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm font-semibold text-slate-700" placeholder="Nhập tên đăng nhập..." />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Mật khẩu</label>
+          <input type="text" id="modalPassword" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm font-semibold text-slate-700" placeholder="Nhập mật khẩu..." />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Vai trò</label>
+          <select id="modalRole" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm font-semibold text-slate-700">
+            <option value="teacher">Giảng viên (Teacher)</option>
+            <option value="admin">Quản trị viên (Admin)</option>
           </select>
         </div>
-        <button id="startBtn" onclick="startQuiz()"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shadow">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 4v16m8-8H4"/>
-          </svg>
-          Giao bài mới
-        </button>
-        <button onclick="loadResults()"
-          class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl transition flex items-center gap-2 shadow-sm">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          Làm mới
-        </button>
-      </div>
-
-      <!-- Session Info -->
-      <div id="sessionInfo" class="hidden">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          <!-- Code + QR -->
-          <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center">
-            <p class="text-sm text-blue-600 font-medium mb-2">Mã tham gia</p>
-            <p id="quizCode" class="text-5xl font-black text-blue-700 tracking-widest mb-1">——</p>
-            <p id="activeQuizTypeName" class="text-xs text-blue-600 font-bold bg-blue-100 px-3 py-1 rounded-full inline-block mb-3">——</p>
-            <p class="text-xs text-gray-500 mb-4">Học viên nhập mã này tại trang Quiz</p>
-            <div id="qrContainer" class="flex justify-center">
-              <img id="qrImage" src="" alt="QR Code" class="w-40 h-40 rounded-lg shadow" />
-            </div>
-            <p class="text-xs text-gray-400 mt-2">Quét QR để vào thẳng trang bài</p>
-          </div>
-
-          <!-- Stats -->
-          <div class="space-y-4">
-            <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-              <p class="text-sm text-green-600 font-medium">Số học viên đã vào</p>
-              <p id="countJoined" class="text-4xl font-bold text-green-700">0</p>
-            </div>
-            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
-              <p class="text-sm text-yellow-600 font-medium">Đã nộp bài</p>
-              <p id="countSubmitted" class="text-4xl font-bold text-yellow-700">0</p>
-            </div>
-            <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
-              <p class="text-sm text-purple-600 font-medium">Điểm trung bình</p>
-              <p id="avgScore" class="text-4xl font-bold text-purple-700">—</p>
-            </div>
-          </div>
+        <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeUserModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-500 font-semibold text-sm hover:bg-slate-50 transition">Hủy</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 shadow-md shadow-blue-500/10 transition">Lưu</button>
         </div>
-      </div>
+      </form>
     </div>
+  </div>
 
-    <!-- Results Table -->
-    <div id="resultsCard" class="hidden bg-white rounded-2xl shadow p-6">
-      
-      <!-- Print Header (Hidden on screen, visible on print) -->
-      <div id="printHeader" class="hidden text-black mb-6">
-        <h1 class="text-center font-bold text-2xl uppercase tracking-wider mb-4">Phiếu Kết Quả Đánh Giá Kỹ Năng</h1>
-        <div class="grid grid-cols-2 gap-y-2 text-sm font-semibold border-b-2 border-black pb-4 mb-2">
-          <div>Giảng viên đánh giá: <span id="printLecturerCode" class="font-normal">——</span></div>
-          <div class="text-right">Ngày đánh giá: <span id="printDate" class="font-normal">——</span></div>
-          <div>Loại bài kiểm tra: <span id="printQuizType" class="font-normal">——</span></div>
-          <div class="text-right">Mã phòng thi: <span id="printSessionCode" class="font-normal">——</span></div>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <h2 class="text-xl font-bold text-gray-800">Kết quả thời gian thực</h2>
-          <span class="text-xs text-gray-400 animate-pulse" id="liveLabel">● Tự động cập nhật mỗi 2s</span>
-        </div>
-        <button id="btnPrintResults" onclick="preparePrint()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow text-sm">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+  <!-- ==================== QUIZ MODAL ==================== -->
+  <div id="quizModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="quizModalTitle" class="font-bold text-slate-900 text-base">Thêm đề thi</h3>
+        <button onclick="closeQuizModal()" class="text-slate-400 hover:text-slate-600 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
-          In kết quả
         </button>
       </div>
+      <form id="quizForm" class="p-6 space-y-4">
+        <input type="hidden" id="modalQuizId" />
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tên đề thi</label>
+          <input type="text" id="modalQuizTitle" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm font-semibold text-slate-700" placeholder="Ví dụ: Kiểm tra thao tác đúc" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Mã đề thi</label>
+          <input type="text" id="modalQuizCode" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm font-semibold text-slate-700" placeholder="Ví dụ: option3, option4" />
+          <p class="text-[10px] text-slate-400 mt-1">Sử dụng chữ cái viết liền không dấu (không được đặt trùng với mã hiện tại và tránh 'option2').</p>
+        </div>
+        <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeQuizModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-500 font-semibold text-sm hover:bg-slate-50 transition">Hủy</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 shadow-md shadow-blue-500/10 transition">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-gray-50 text-gray-600 uppercase text-xs">
-              <th class="px-4 py-3 text-left rounded-l-lg">Hạng</th>
-              <th class="px-4 py-3 text-left">Học viên</th>
-              <th class="px-4 py-3 text-center">Điểm</th>
-              <th class="px-4 py-3 text-center rounded-r-lg">Trạng thái</th>
-            </tr>
-          </thead>
-          <tbody id="resultsBody" class="divide-y divide-gray-100">
-            <tr>
-              <td colspan="4" class="text-center text-gray-400 py-8">Chưa có học viên nào</td>
-            </tr>
-          </tbody>
-        </table>
+  <!-- ==================== STEP EDIT MODAL ==================== -->
+  <div id="stepModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-xl overflow-hidden">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="stepModalTitle" class="font-bold text-slate-900 text-base">Thêm bước mới</h3>
+        <button onclick="closeStepModal()" class="text-slate-400 hover:text-slate-600 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
       </div>
+      <form id="stepForm" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
+        <input type="hidden" id="modalStepId" />
 
-      <!-- Print Footer (Hidden on screen, visible on print) -->
-      <!-- <div id="printFooter" class="hidden text-black mt-12">
-        <div class="flex justify-between text-sm font-semibold">
-          <div class="w-1/3 text-center">
-            <p>HỌC VIÊN</p>
-            <p class="text-[10px] text-gray-500 font-normal italic mt-1">(Ký và ghi rõ họ tên)</p>
-            <div class="h-24"></div>
-          </div>
-          <div class="w-1/3 text-center">
-            <p>GIẢNG VIÊN ĐÁNH GIÁ</p>
-            <p class="text-[10px] text-gray-500 font-normal italic mt-1">(Ký và ghi rõ họ tên)</p>
-            <div class="h-24"></div>
+        <!-- Image input & upload -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Hình ảnh minh họa</label>
+          <div class="flex flex-col sm:flex-row gap-3 items-start">
+            <div class="w-24 h-18 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
+              <img id="modalStepImagePreview" src="" class="w-full h-full object-cover hidden" />
+              <span id="modalStepImagePlaceholder" class="text-[10px] text-slate-400 italic">Trống</span>
+            </div>
+            <div class="flex-1 w-full space-y-2">
+              <input type="file" id="modalStepFile" accept="image/*" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
+              <input type="text" id="modalStepImageUrl" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 transition text-xs font-semibold text-slate-600" placeholder="Hoặc nhập đường dẫn ảnh (ví dụ: /images/1.png)..." />
+            </div>
           </div>
         </div>
-      </div> -->
 
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Thao tác tay trái</label>
+          <textarea id="modalStepLeft" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 transition text-sm text-slate-700" placeholder="Ví dụ: Lấy terminal ngắn từ khay..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Thao tác tay phải</label>
+          <textarea id="modalStepRight" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 transition text-sm text-slate-700" placeholder="Ví dụ: Set terminal ngắn vào khuôn trong..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Chú ý quan trọng</label>
+          <textarea id="modalStepNote" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 transition text-sm text-slate-700" placeholder="Ví dụ: Terminal không bị cong..."></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Lý do thực hiện</label>
+          <textarea id="modalStepReason" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 transition text-sm text-slate-700" placeholder="Ví dụ: Tránh lộ terminal, dị vật..."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeStepModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-500 font-semibold text-sm hover:bg-slate-50 transition">Hủy</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 shadow-md shadow-blue-500/10 transition">Lưu</button>
+        </div>
+      </form>
     </div>
-
   </div>
 
   <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const isOpen = sidebar.classList.contains('sidebar-open');
+      if (isOpen) {
+        sidebar.classList.remove('sidebar-open', 'w-full', 'md:w-64', 'opacity-100');
+        sidebar.classList.add('w-0', 'opacity-0', 'pointer-events-none');
+      } else {
+        sidebar.classList.remove('w-0', 'opacity-0', 'pointer-events-none');
+        sidebar.classList.add('sidebar-open', 'w-full', 'md:w-64', 'opacity-100');
+      }
+    }
+
     // Auth guard
     if (!sessionStorage.getItem('loggedIn')) {
       window.location.href = '/';
     }
 
-    let currentCode = null;
-    let autoRefreshTimer = null;
+    const currentRole = sessionStorage.getItem('role') || 'teacher';
+    const currentUsername = sessionStorage.getItem('username') || 'Giảng viên';
+
+    document.getElementById('sidebarUsername').textContent = currentUsername;
+    document.getElementById('sidebarRole').textContent = currentRole === 'admin' ? 'Quản trị viên (Admin)' : 'Giảng viên (Teacher)';
+
+    // Date
+    const today = new Date();
+    document.getElementById('currentDateStr').textContent = today.getDate().toString().padStart(2, '0') + '/' + 
+                                                           (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+                                                           today.getFullYear();
+
+    // Hide admin options if role is not admin
+    if (currentRole !== 'admin') {
+      const menuAccounts = document.getElementById('menu-accounts');
+      const menuQuizzes = document.getElementById('menu-quizzes');
+      if (menuAccounts) menuAccounts.classList.add('hidden');
+      if (menuQuizzes) menuQuizzes.classList.add('hidden');
+    }
+
+    // Dynamic Options List
+    let activeOptions = [];
+    async function loadQuizDropdown() {
+      try {
+        const res = await fetch('/quiz/options');
+        if (!res.ok) return;
+        activeOptions = await res.json();
+
+        const selectEl = document.getElementById('quizTypeSelect');
+        const currentVal = selectEl.value;
+        selectEl.innerHTML = activeOptions.map(opt => {
+          return `<option value="${opt.code}">${opt.title}</option>`;
+        }).join('');
+
+        if (currentVal && activeOptions.some(x => x.code === currentVal)) {
+          selectEl.value = currentVal;
+        }
+      } catch (e) {
+        console.error('Lỗi tải danh sách đề thi dropdown', e);
+      }
+    }
+
+    // Tab switcher
+    let activeTab = 'sessions';
+    function switchTab(tabName) {
+      activeTab = tabName;
+      
+      // Update UI tabs hidden state
+      const tabs = ['sessions', 'accounts', 'quizzes'];
+      tabs.forEach(t => {
+        const sect = document.getElementById('tab-' + t);
+        const btn = document.getElementById('menu-' + t);
+        if (sect) {
+          if (t === tabName) {
+            sect.classList.remove('hidden');
+          } else {
+            sect.classList.add('hidden');
+          }
+        }
+        if (btn) {
+          if (t === tabName) {
+            btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition bg-blue-600 text-white shadow-lg shadow-blue-600/10";
+          } else {
+            btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition hover:bg-slate-800 hover:text-white";
+          }
+        }
+      });
+
+      // Update Page Title
+      const titleMap = {
+        'sessions': 'Quản lý buổi học',
+        'accounts': 'Quản lý tài khoản',
+        'quizzes': 'Quản lý đề thi'
+      };
+      document.getElementById('pageTitle').textContent = titleMap[tabName] || 'Dashboard';
+
+      // Load tab-specific data
+      if (tabName === 'accounts') {
+        loadUsers();
+      } else if (tabName === 'quizzes') {
+        loadQuizzes();
+      }
+    }
 
     function logout() {
       sessionStorage.removeItem('loggedIn');
+      sessionStorage.removeItem('username');
+      sessionStorage.removeItem('role');
       window.location.href = '/';
     }
+
+
+    // ==================== TAB 1: SESSIONS LOGIC ====================
+    let currentCode = null;
+    let autoRefreshTimer = null;
 
     async function startQuiz() {
       const btn = document.getElementById('startBtn');
       const quizType = document.getElementById('quizTypeSelect').value;
-      const username = sessionStorage.getItem('username'); // Fetch username
+      const username = sessionStorage.getItem('username');
       btn.disabled = true;
       btn.textContent = 'Đang tạo...';
 
@@ -237,20 +651,20 @@
         });
 
         const data = await res.json();
-
         currentCode = data.code;
         document.getElementById('quizCode').textContent = data.code;
         
-        const typeName = data.quiz_type === 'option2' ? 'Kiểm tra TIE' : 'Kiểm tra thao tác đúc';
+        // Find title
+        const match = activeOptions.find(o => o.code === data.quiz_type);
+        const typeName = match ? match.title : 'Kiểm tra';
         document.getElementById('activeQuizTypeName').textContent = typeName;
 
-        // QR via public API (no key needed)
         const quizUrl = window.location.origin + '/quiz-page?code=' + data.code;
         const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(quizUrl);
         document.getElementById('qrImage').src = qrUrl;
 
         document.getElementById('sessionInfo').classList.remove('hidden');
-        document.getElementById('resultsCard').classList.remove('hidden');
+        document.getElementById('resultsCardContainer').classList.remove('hidden');
 
         startAutoRefresh();
 
@@ -287,50 +701,107 @@
         document.getElementById('countSubmitted').textContent = submitted;
         document.getElementById('avgScore').textContent = avg;
 
-        const typeName = data.quiz_type === 'option2' ? 'Kiểm tra TIE' : 'Kiểm tra thao tác đúc';
+        const match = activeOptions.find(o => o.code === data.quiz_type);
+        const typeName = match ? match.title : (data.quiz_type === 'option2' ? 'Kiểm tra TIE' : 'Kiểm tra');
         document.getElementById('activeQuizTypeName').textContent = typeName;
+
+        const thead = document.getElementById('resultsTableHead');
+        if (data.quiz_type === 'option2') {
+          thead.innerHTML = `
+            <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
+              <th class="px-4 py-3 text-left rounded-l-xl w-16">Hạng</th>
+              <th class="px-4 py-3 text-left">Học viên</th>
+              <th class="px-4 py-3 text-center">Điểm đạt được</th>
+              <th class="px-4 py-3 text-left">Điểm từng bài</th>
+              <th class="px-4 py-3 text-center">Trạng thái</th>
+              <th class="px-4 py-3 text-center rounded-r-xl w-32">Kết quả</th>
+            </tr>
+          `;
+        } else {
+          thead.innerHTML = `
+            <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
+              <th class="px-6 py-3.5 text-left rounded-l-xl w-16">Hạng</th>
+              <th class="px-6 py-3.5 text-left">Học viên</th>
+              <th class="px-6 py-3.5 text-center">Điểm</th>
+              <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Trạng thái</th>
+            </tr>
+          `;
+        }
 
         const tbody = document.getElementById('resultsBody');
         if (students.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-400 py-8">Chưa có học viên nào</td></tr>';
+          const colSpan = data.quiz_type === 'option2' ? 6 : 4;
+          tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-slate-400 py-8">Chưa có học viên nào</td></tr>`;
           return;
         }
 
-        const rankEmoji = ['🥇', '🥈', '🥉'];
         tbody.innerHTML = students.map((s, i) => {
-          const rank = rankEmoji[i] || (i + 1);
-          const pct = Math.round((s.score / data.total_steps) * 100);
-          const barColor = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-400';
-          
-          let progressBadge = '';
+          const rank = i + 1; // Rank number: 1, 2, 3... instead of emojis
+
+          const statusText = s.submitted
+            ? '<span class="bg-emerald-50 border border-emerald-250 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full">✓ Đã nộp bài</span>'
+            : '<span class="bg-amber-50 border border-amber-250 text-amber-700 text-xs font-semibold px-2.5 py-1 rounded-full">⏳ Chờ nộp...</span>';
+
           if (data.quiz_type === 'option2') {
-            progressBadge = `<span class="text-xs text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded ml-2 font-normal">${escHtml(s.progress_text || "Chưa làm bài nào")}</span>`;
-          }
-          
-          return `
-            <tr class="hover:bg-gray-50 transition">
-              <td class="px-4 py-3 font-semibold text-gray-600">${rank}</td>
-              <td class="px-4 py-3 font-medium text-gray-800">
-                <div class="flex items-center">
-                  <span>${escHtml(s.name)}</span>
-                  ${progressBadge}
-                </div>
-              </td>
-              <td class="px-4 py-3 text-center">
-                <div class="flex items-center gap-2 justify-center">
-                  <div class="w-24 bg-gray-200 rounded-full h-2">
-                    <div class="${barColor} h-2 rounded-full" style="width:${pct}%"></div>
+            const scores = (s.answer_order && s.answer_order.scores) ? s.answer_order.scores : {};
+            
+            // Format B1..B9 scores
+            const subScoresText = [];
+            for (let k = 1; k <= 9; k++) {
+              const val = scores[k.toString()] !== undefined ? scores[k.toString()] : '—';
+              subScoresText.push(`B${k}: ${val}`);
+            }
+            const subScoresFormatted = subScoresText.join(', ');
+
+            // Calculate dat/khong dat: must complete all 9 and none is 0
+            let isDat = true;
+            for (let k = 1; k <= 9; k++) {
+              const scoreVal = scores[k.toString()];
+              if (scoreVal === undefined || scoreVal === null || parseFloat(scoreVal) === 0) {
+                isDat = false;
+                break;
+              }
+            }
+
+            const resultBadge = isDat && s.submitted
+              ? '<span class="bg-emerald-50 border border-emerald-250 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase">Đạt</span>'
+              : '<span class="bg-rose-50 border border-rose-250 text-rose-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase">Không Đạt</span>';
+
+            return `
+              <tr class="hover:bg-slate-50 border-b border-slate-100 transition text-xs font-medium text-slate-700">
+                <td class="px-4 py-3.5 font-bold text-slate-500 text-left">${rank}</td>
+                <td class="px-4 py-3.5 font-bold text-slate-800 text-left">${escHtml(s.name)}</td>
+                <td class="px-4 py-3.5 text-center font-bold text-slate-900">${s.score}/${data.total_steps}</td>
+                <td class="px-4 py-3.5 text-left text-slate-500">${subScoresFormatted}</td>
+                <td class="px-4 py-3.5 text-center">${statusText}</td>
+                <td class="px-4 py-3.5 text-center">${resultBadge}</td>
+              </tr>
+            `;
+          } else {
+            const pct = Math.round((s.score / data.total_steps) * 100);
+            const barColor = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500';
+            
+            return `
+              <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+                <td class="px-6 py-4 font-bold text-slate-500">${rank}</td>
+                <td class="px-6 py-4 font-bold text-slate-800">
+                  <div class="flex items-center">
+                    <span>${escHtml(s.name)}</span>
                   </div>
-                  <span class="font-bold text-gray-700">${s.score}/${data.total_steps}</span>
-                </div>
-              </td>
-              <td class="px-4 py-3 text-center">
-                ${s.submitted
-                  ? '<span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">✓ Đang học/Đã nộp</span>'
-                  : '<span class="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-1 rounded-full">⏳ Chờ nộp</span>'
-                }
-              </td>
-            </tr>`;
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <div class="flex items-center gap-2 justify-center">
+                    <div class="w-24 bg-slate-100 rounded-full h-2">
+                      <div class="${barColor} h-2 rounded-full" style="width:${pct}%"></div>
+                    </div>
+                    <span class="font-extrabold text-slate-700">${s.score}/${data.total_steps}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  ${statusText}
+                </td>
+              </tr>`;
+          }
         }).join('');
 
       } catch { /* silent fail */ }
@@ -357,30 +828,488 @@
       window.print();
     }
 
-    // Try to restore active session on load
-    (async () => {
+
+    // ==================== TAB 2: ACCOUNTS LOGIC ====================
+    let usersList = [];
+    async function loadUsers() {
       try {
-        const username = sessionStorage.getItem('username'); // Fetch username
+        const res = await fetch('/auth/users');
+        if (!res.ok) return;
+        usersList = await res.json();
+
+        const tbody = document.getElementById('userTableBody');
+        if (usersList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-slate-400 py-8">Chưa có người dùng nào</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = usersList.map(u => {
+          const roleBadge = u.role === 'admin' 
+            ? '<span class="bg-red-50 text-red-700 font-bold border border-red-200 px-2 py-0.5 rounded text-xs uppercase">Admin</span>'
+            : '<span class="bg-blue-50 text-blue-700 font-bold border border-blue-200 px-2 py-0.5 rounded text-xs uppercase">Giảng viên</span>';
+          
+          const isSystemAdmin = u.username === 'admin';
+          const actionsHtml = isSystemAdmin 
+            ? `<span class="text-xs text-slate-400 italic">Mặc định hệ thống</span>`
+            : `<div class="flex justify-center gap-2">
+                 <button onclick="openUserModal(true, ${u.id})" class="text-blue-600 hover:text-blue-800 font-semibold text-xs px-2.5 py-1 bg-blue-50 border border-blue-150 rounded hover:bg-blue-100 transition">Sửa</button>
+                 <button onclick="deleteUser(${u.id}, '${escHtml(u.username)}')" class="text-red-600 hover:text-red-800 font-semibold text-xs px-2.5 py-1 bg-red-50 border border-red-150 rounded hover:bg-red-100 transition">Xóa</button>
+               </div>`;
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="px-6 py-4 font-semibold text-slate-500">${u.id}</td>
+              <td class="px-6 py-4 font-bold text-slate-800">${escHtml(u.username)}</td>
+              <td class="px-6 py-4 font-medium text-slate-500">${escHtml(u.password)}</td>
+              <td class="px-6 py-4">${roleBadge}</td>
+              <td class="px-6 py-4 text-center">${actionsHtml}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Lỗi tải người dùng', err);
+      }
+    }
+
+    function openUserModal(isEdit, userId = null) {
+      const modal = document.getElementById('userModal');
+      const title = document.getElementById('userModalTitle');
+      const form = document.getElementById('userForm');
+      
+      form.reset();
+      document.getElementById('modalUserId').value = '';
+
+      if (isEdit && userId) {
+        title.textContent = 'Chỉnh sửa tài khoản';
+        const user = usersList.find(x => x.id === userId);
+        if (user) {
+          document.getElementById('modalUserId').value = user.id;
+          document.getElementById('modalUsername').value = user.username;
+          document.getElementById('modalPassword').value = user.password;
+          document.getElementById('modalRole').value = user.role;
+        }
+      } else {
+        title.textContent = 'Thêm tài khoản mới';
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeUserModal() {
+      document.getElementById('userModal').classList.add('hidden');
+    }
+
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const userId = document.getElementById('modalUserId').value;
+      const username = document.getElementById('modalUsername').value.trim();
+      const password = document.getElementById('modalPassword').value;
+      const role = document.getElementById('modalRole').value;
+
+      const method = userId ? 'PUT' : 'POST';
+      const url = userId ? `/auth/users/${userId}` : '/auth/users';
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, role })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert(data.message);
+          closeUserModal();
+          loadUsers();
+        } else {
+          alert(data.message || 'Lỗi xử lý tài khoản');
+        }
+      } catch (err) {
+        alert('Lỗi kết nối server: ' + err.message);
+      }
+    });
+
+    async function deleteUser(userId, username) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa tài khoản "${username}" không?`)) return;
+      try {
+        const res = await fetch(`/auth/users/${userId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          loadUsers();
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert('Lỗi kết nối server: ' + err.message);
+      }
+    }
+
+
+    // ==================== TAB 3: QUIZZES LOGIC ====================
+    let quizzesList = [];
+    let currentEditingQuizId = null;
+    let currentQuizSteps = [];
+
+    async function loadQuizzes() {
+      try {
+        const res = await fetch('/quiz/options');
+        if (!res.ok) return;
+        quizzesList = await res.json();
+
+        // Also refresh the dropdown in tab 1
+        loadQuizDropdown();
+
+        const tbody = document.getElementById('quizTableBody');
+        if (quizzesList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-slate-400 py-8">Chưa có đề thi nào</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = quizzesList.map(q => {
+          const typeBadge = q.code === 'option2' 
+            ? '<span class="bg-purple-50 text-purple-700 font-bold border border-purple-200 px-2 py-0.5 rounded text-[10px] uppercase">TIE Matching</span>'
+            : '<span class="bg-blue-50 text-blue-700 font-bold border border-blue-200 px-2 py-0.5 rounded text-[10px] uppercase">Matching Grid</span>';
+          
+          const labelBadge = q.is_custom 
+            ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-semibold uppercase">Tự tạo</span>'
+            : '<span class="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-semibold uppercase">Hệ thống</span>';
+          
+          let actionsHtml = '';
+          if (q.code === 'option2') {
+            actionsHtml = `<span class="text-xs text-slate-400 italic">Cố định hệ thống</span>`;
+          } else {
+            actionsHtml = `
+              <div class="flex justify-center gap-2">
+                <button onclick="editQuizSteps(${q.id}, '${escHtml(q.title)}', '${escHtml(q.code)}')" class="text-blue-600 hover:text-blue-800 font-semibold text-xs px-2.5 py-1 bg-blue-50 border border-blue-150 rounded hover:bg-blue-100 transition">Sửa các bước</button>
+                <button onclick="openQuizModal(true, ${q.id})" class="text-slate-600 hover:text-slate-800 font-semibold text-xs px-2.5 py-1 bg-slate-50 border border-slate-150 rounded hover:bg-slate-100 transition">Đổi tên</button>
+                ${q.is_custom 
+                  ? `<button onclick="deleteQuiz(${q.id}, '${escHtml(q.title)}')" class="text-red-600 hover:text-red-800 font-semibold text-xs px-2.5 py-1 bg-red-50 border border-red-150 rounded hover:bg-red-100 transition">Xóa</button>`
+                  : ''
+                }
+              </div>`;
+          }
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="px-6 py-4 font-bold text-slate-500">${escHtml(q.code)}</td>
+              <td class="px-6 py-4 font-bold text-slate-800">${escHtml(q.title)}</td>
+              <td class="px-6 py-4">${typeBadge}</td>
+              <td class="px-6 py-4">${labelBadge}</td>
+              <td class="px-6 py-4 text-center">${actionsHtml}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Lỗi tải đề thi', err);
+      }
+    }
+
+    function openQuizModal(isEdit, quizId = null) {
+      const modal = document.getElementById('quizModal');
+      const title = document.getElementById('quizModalTitle');
+      const form = document.getElementById('quizForm');
+      
+      form.reset();
+      document.getElementById('modalQuizId').value = '';
+      document.getElementById('modalQuizCode').disabled = false;
+
+      if (isEdit && quizId) {
+        title.textContent = 'Chỉnh sửa tiêu đề đề thi';
+        const q = quizzesList.find(x => x.id === quizId);
+        if (q) {
+          document.getElementById('modalQuizId').value = q.id;
+          document.getElementById('modalQuizTitle').value = q.title;
+          document.getElementById('modalQuizCode').value = q.code;
+          // Disable code edits for system quiz option1
+          if (!q.is_custom) {
+            document.getElementById('modalQuizCode').disabled = true;
+          }
+        }
+      } else {
+        title.textContent = 'Tạo đề thi mới';
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeQuizModal() {
+      document.getElementById('quizModal').classList.add('hidden');
+    }
+
+    document.getElementById('quizForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const quizId = document.getElementById('modalQuizId').value;
+      const title = document.getElementById('modalQuizTitle').value.trim();
+      const code = document.getElementById('modalQuizCode').value.trim();
+
+      const method = quizId ? 'PUT' : 'POST';
+      const url = quizId ? `/quiz/options/${quizId}` : '/quiz/options';
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, code })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert(data.message);
+          closeQuizModal();
+          loadQuizzes();
+        } else {
+          alert(data.message || 'Lỗi xử lý đề thi');
+        }
+      } catch (err) {
+        alert('Lỗi kết nối server: ' + err.message);
+      }
+    });
+
+    async function deleteQuiz(quizId, title) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa đề thi "${title}"? Tất cả dữ liệu câu hỏi đi kèm sẽ bị xóa!`)) return;
+      try {
+        const res = await fetch(`/quiz/options/${quizId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          loadQuizzes();
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert('Lỗi kết nối server: ' + err.message);
+      }
+    }
+
+
+    // ==================== QUIZ STEPS EDITOR LOGIC ====================
+    async function editQuizSteps(quizId, title, code) {
+      currentEditingQuizId = quizId;
+      document.getElementById('editQuizTitle').textContent = title;
+      document.getElementById('editQuizCode').textContent = code;
+
+      // Show editor view, hide list view
+      document.getElementById('quizListView').classList.add('hidden');
+      document.getElementById('quizStepEditorView').classList.remove('hidden');
+
+      loadSteps();
+    }
+
+    function backToQuizList() {
+      document.getElementById('quizStepEditorView').classList.add('hidden');
+      document.getElementById('quizListView').classList.remove('hidden');
+      loadQuizzes();
+    }
+
+    async function loadSteps() {
+      if (!currentEditingQuizId) return;
+      try {
+        const res = await fetch(`/quiz/options/${currentEditingQuizId}/steps`);
+        if (!res.ok) return;
+        currentQuizSteps = await res.json();
+
+        const tbody = document.getElementById('stepsTableBody');
+        if (currentQuizSteps.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 py-8">Đề thi này chưa có bước nào. Hãy thêm bước đầu tiên!</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = currentQuizSteps.map(s => {
+          const imgHtml = s.image_url 
+            ? `<img src="${s.image_url}" class="w-16 h-12 object-cover rounded border border-slate-200" />`
+            : `<span class="text-[10px] text-slate-400 italic">Chưa có ảnh</span>`;
+
+          return `
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+              <td class="px-4 py-3 text-center font-bold text-slate-500">${s.step_num}</td>
+              <td class="px-4 py-3">${imgHtml}</td>
+              <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.left_text)}">${escHtml(s.left_text || '—')}</td>
+              <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.right_text)}">${escHtml(s.right_text || '—')}</td>
+              <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.note_text)}">${escHtml(s.note_text || '—')}</td>
+              <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.reason_text)}">${escHtml(s.reason_text || '—')}</td>
+              <td class="px-4 py-3 text-center">
+                <div class="flex justify-center gap-1.5">
+                  <button onclick="openStepModal(true, ${s.id})" class="text-blue-600 hover:text-blue-800 font-bold px-2 py-1 bg-blue-50 border border-blue-150 rounded transition">Sửa</button>
+                  <button onclick="deleteStep(${s.id})" class="text-red-600 hover:text-red-800 font-bold px-2 py-1 bg-red-50 border border-red-150 rounded transition">Xóa</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Lỗi tải các bước đề thi', err);
+      }
+    }
+
+    function openStepModal(isEdit, stepId = null) {
+      const modal = document.getElementById('stepModal');
+      const title = document.getElementById('stepModalTitle');
+      const form = document.getElementById('stepForm');
+      
+      form.reset();
+      document.getElementById('modalStepId').value = '';
+      
+      // Reset Image Preview
+      document.getElementById('modalStepImagePreview').classList.add('hidden');
+      document.getElementById('modalStepImagePreview').src = '';
+      document.getElementById('modalStepImagePlaceholder').classList.remove('hidden');
+
+      if (isEdit && stepId) {
+        title.textContent = 'Chỉnh sửa bước';
+        const s = currentQuizSteps.find(x => x.id === stepId);
+        if (s) {
+          document.getElementById('modalStepId').value = s.id;
+          document.getElementById('modalStepImageUrl').value = s.image_url;
+          document.getElementById('modalStepLeft').value = s.left_text;
+          document.getElementById('modalStepRight').value = s.right_text;
+          document.getElementById('modalStepNote').value = s.note_text;
+          document.getElementById('modalStepReason').value = s.reason_text;
+
+          if (s.image_url) {
+            const previewImg = document.getElementById('modalStepImagePreview');
+            previewImg.src = s.image_url;
+            previewImg.classList.remove('hidden');
+            document.getElementById('modalStepImagePlaceholder').classList.add('hidden');
+          }
+        }
+      } else {
+        title.textContent = `Thêm bước mới (STT ${currentQuizSteps.length + 1})`;
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeStepModal() {
+      document.getElementById('stepModal').classList.add('hidden');
+    }
+
+    // Handle immediate image upload on file select
+    document.getElementById('modalStepFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/quiz/upload-image', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (res.ok && data.ok) {
+          document.getElementById('modalStepImageUrl').value = data.image_url;
+          
+          const previewImg = document.getElementById('modalStepImagePreview');
+          previewImg.src = data.image_url;
+          previewImg.classList.remove('hidden');
+          document.getElementById('modalStepImagePlaceholder').classList.add('hidden');
+        } else {
+          alert(data.message || 'Lỗi khi tải ảnh lên');
+        }
+      } catch (err) {
+        alert('Lỗi tải ảnh lên: ' + err.message);
+      }
+    });
+
+    // Handle direct URL typing preview updates
+    document.getElementById('modalStepImageUrl').addEventListener('input', (e) => {
+      const url = e.target.value.trim();
+      const previewImg = document.getElementById('modalStepImagePreview');
+      if (url) {
+        previewImg.src = url;
+        previewImg.classList.remove('hidden');
+        document.getElementById('modalStepImagePlaceholder').classList.add('hidden');
+      } else {
+        previewImg.src = '';
+        previewImg.classList.add('hidden');
+        document.getElementById('modalStepImagePlaceholder').classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('stepForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const stepId = document.getElementById('modalStepId').value;
+      const imageUrl = document.getElementById('modalStepImageUrl').value.trim();
+      const leftText = document.getElementById('modalStepLeft').value.trim();
+      const rightText = document.getElementById('modalStepRight').value.trim();
+      const noteText = document.getElementById('modalStepNote').value.trim();
+      const reasonText = document.getElementById('modalStepReason').value.trim();
+
+      const method = stepId ? 'PUT' : 'POST';
+      const url = stepId ? `/quiz/steps/${stepId}` : `/quiz/options/${currentEditingQuizId}/steps`;
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_url: imageUrl, left_text: leftText, right_text: rightText, note_text: noteText, reason_text: reasonText })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert(data.message);
+          closeStepModal();
+          loadSteps();
+        } else {
+          alert(data.message || 'Lỗi lưu dữ liệu bước');
+        }
+      } catch (err) {
+        alert('Lỗi kết nối server: ' + err.message);
+      }
+    });
+
+    async function deleteStep(stepId) {
+      if (!confirm(`Bạn chắc chắn muốn xóa bước này? Tất cả các bước phía sau sẽ được cập nhật lại số thứ tự (STT).`)) return;
+      try {
+        const res = await fetch(`/quiz/steps/${stepId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          loadSteps();
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert('Lỗi kết nối server: ' + err.message);
+      }
+    }
+
+
+    // Initial setup
+    (async () => {
+      // Load dropdown first
+      await loadQuizDropdown();
+
+      // Check if there is an active session
+      try {
+        const username = sessionStorage.getItem('username');
         const res = await fetch('/quiz/active?username=' + encodeURIComponent(username || ''));
         const data = await res.json();
 
         if (data.active) {
           currentCode = data.code;
           document.getElementById('quizCode').textContent = data.code;
-          const typeName = data.quiz_type === 'option2' ? 'Kiểm tra TIE' : 'Kiểm tra thao tác đúc';
+          
+          const match = activeOptions.find(o => o.code === data.quiz_type);
+          const typeName = match ? match.title : (data.quiz_type === 'option2' ? 'Kiểm tra TIE' : 'Kiểm tra');
           document.getElementById('activeQuizTypeName').textContent = typeName;
           
-          // Pre-select the matching value in dropdown if it exists
           const selectEl = document.getElementById('quizTypeSelect');
           if (selectEl) selectEl.value = data.quiz_type || 'option1';
 
           const quizUrl = window.location.origin + '/quiz-page?code=' + data.code;
           document.getElementById('qrImage').src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(quizUrl);
+          
           document.getElementById('sessionInfo').classList.remove('hidden');
-          document.getElementById('resultsCard').classList.remove('hidden');
+          document.getElementById('resultsCardContainer').classList.remove('hidden');
           startAutoRefresh();
         }
-      } catch { /* no active session */ }
+      } catch (e) {
+        // no active session
+      }
     })();
   </script>
 </body>

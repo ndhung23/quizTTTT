@@ -6,17 +6,14 @@ let studentName = '';
 let quizType = 'option1';
 let sessionCode = '';
 
-// Option 1 Grid State
-// gridPlacement[row_idx][col_name] = id (1..23)
-let gridPlacement = Array.from({length: 23}, () => ({
-  image_id: null,
-  left_id: null,
-  right_id: null,
-  note_id: null,
-  reason_id: null
-}));
+let activeQuizSteps = [];
+let activeQuizTitle = '';
 
-let currentPart = 1; // 1: Steps 1-7, 2: Steps 8-15, 3: Steps 16-23
+// Option 1 Grid State
+// gridPlacement[row_idx][col_name] = id (1..N)
+let gridPlacement = [];
+
+let currentPart = 1; // 1: Part 1, 2: Part 2, etc.
 
 // Option 2 State
 let completedSubQuizzes = [];
@@ -56,10 +53,23 @@ function clearStudentSession() {
 }
 
 function restoreWipProgress() {
+  // Initialize gridPlacement with correct length
+  const expectedLen = activeQuizSteps.length || 23;
+  gridPlacement = Array.from({length: expectedLen}, () => ({
+    image_id: null,
+    left_id: null,
+    right_id: null,
+    note_id: null,
+    reason_id: null
+  }));
+
   const savedPlacement = localStorage.getItem('gridPlacement_' + studentId);
   if (savedPlacement) {
     try {
-      gridPlacement = JSON.parse(savedPlacement);
+      const parsed = JSON.parse(savedPlacement);
+      if (Array.isArray(parsed) && parsed.length === expectedLen) {
+        gridPlacement = parsed;
+      }
     } catch (e) {
       // ignore
     }

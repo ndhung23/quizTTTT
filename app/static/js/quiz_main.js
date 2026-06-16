@@ -59,6 +59,31 @@ if (joinForm) {
   });
 }
 
+async function loadQuizDefinitionAndStart() {
+  try {
+    const res = await fetch('/quiz/definition/' + quizType);
+    if (!res.ok) {
+      alert('Không thể tải cấu hình đề thi này từ server');
+      return;
+    }
+    const data = await res.json();
+    activeQuizSteps = data.steps || [];
+    activeQuizTitle = data.title || 'Kiểm tra';
+    
+    const titleHeader = document.getElementById('quizTitleHeader');
+    if (titleHeader) titleHeader.textContent = activeQuizTitle;
+
+    restoreWipProgress();
+
+    document.getElementById('screenJoin').classList.add('hidden');
+    document.getElementById('screenOption1').classList.remove('hidden');
+    document.getElementById('studentNameO1').textContent = studentName;
+    initOption1();
+  } catch (err) {
+    alert('Lỗi kết nối khi tải đề thi: ' + err.message);
+  }
+}
+
 function initJoinedScreen() {
   document.getElementById('screenJoin').classList.add('hidden');
   if (quizType === 'option2') {
@@ -66,9 +91,7 @@ function initJoinedScreen() {
     document.getElementById('studentNameO2').textContent = studentName;
     loadOption2State();
   } else {
-    document.getElementById('screenOption1').classList.remove('hidden');
-    document.getElementById('studentNameO1').textContent = studentName;
-    initOption1();
+    loadQuizDefinitionAndStart();
   }
 }
 
@@ -103,8 +126,8 @@ async function retakeQuiz() {
     localStorage.removeItem('subQuizScores_' + studentId);
 
     // Reset local state
-    if (quizType === 'option1') {
-      gridPlacement = Array.from({length: 23}, () => ({
+    if (quizType !== 'option2') {
+      gridPlacement = Array.from({length: activeQuizSteps.length}, () => ({
         image_id: null,
         left_id: null,
         right_id: null,
@@ -142,7 +165,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (storedStudentId && storedSessionCode && storedStudentName) {
     fetch('/quiz/active')
       .then(res => res.json())
-      .then(data => {
+      .then(async data => {
         if (data.active && data.code === storedSessionCode) {
           studentId = parseInt(storedStudentId);
           studentName = storedStudentName;
@@ -157,7 +180,16 @@ window.addEventListener('DOMContentLoaded', () => {
                 const resultsObj = JSON.parse(savedResults);
                 document.getElementById('screenJoin').classList.add('hidden');
                 document.getElementById('screenResult').classList.remove('hidden');
-                if (quizType === 'option1') {
+                if (quizType !== 'option2') {
+                  // Fetch definition for rendering results
+                  const defRes = await fetch('/quiz/definition/' + quizType);
+                  if (defRes.ok) {
+                    const defData = await defRes.json();
+                    activeQuizSteps = defData.steps || [];
+                    activeQuizTitle = defData.title || 'Kiểm tra';
+                    const titleHeader = document.getElementById('quizTitleHeader');
+                    if (titleHeader) titleHeader.textContent = activeQuizTitle;
+                  }
                   const savedPlacement = localStorage.getItem('gridPlacement_' + studentId);
                   if (savedPlacement) gridPlacement = JSON.parse(savedPlacement);
                   showO1Results(resultsObj);
@@ -170,6 +202,17 @@ window.addEventListener('DOMContentLoaded', () => {
               } catch (e) {
                 // ignore
               }
+            }
+          }
+          
+          if (quizType !== 'option2') {
+            const defRes = await fetch('/quiz/definition/' + quizType);
+            if (defRes.ok) {
+              const defData = await defRes.json();
+              activeQuizSteps = defData.steps || [];
+              activeQuizTitle = defData.title || 'Kiểm tra';
+              const titleHeader = document.getElementById('quizTitleHeader');
+              if (titleHeader) titleHeader.textContent = activeQuizTitle;
             }
           }
           

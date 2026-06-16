@@ -10,7 +10,7 @@ const SUB_QUIZ_MAX_SCORES = {
   6: 4,
   7: 4,
   8: 5,
-  9: 4
+  9: 10
 };
 const O2_TOTAL_MAX_SCORE = Object.values(SUB_QUIZ_MAX_SCORES).reduce((a, b) => a + b, 0);
 
@@ -250,6 +250,13 @@ function renderTfExercise(quiz) {
   desc.className = 'text-xs text-yellow-400 font-semibold uppercase tracking-wider';
   desc.textContent = 'Lựa chọn đáp án chính xác cho từng câu hỏi bên dưới:';
   container.appendChild(desc);
+
+  if (quiz.image) {
+    const img = document.createElement('img');
+    img.src = quiz.image;
+    img.className = 'w-full max-h-96 object-contain rounded-xl border border-white/10 shadow mx-auto';
+    container.appendChild(img);
+  }
 
   quiz.questions.forEach((q, idx) => {
     const item = document.createElement('div');
