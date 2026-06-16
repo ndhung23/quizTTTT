@@ -155,7 +155,12 @@ def submit_quiz():
             # Dynamic text comparison logic (avoids hardcoding equivalence groups)
             img_ok = False
             if img and img in steps_dict:
-                img_ok = (steps_dict[img].image_url == correct_step.image_url)
+                placed_img_url = steps_dict[img].image_url or ""
+                correct_img_url = correct_step.image_url or ""
+                if not correct_img_url.strip():
+                    img_ok = not placed_img_url.strip()
+                else:
+                    img_ok = (placed_img_url == correct_img_url)
 
             left_ok = False
             if left and left in steps_dict:

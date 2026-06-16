@@ -601,7 +601,15 @@ function showO1Results(data) {
     let img_ok = false;
     if (row.image_id) {
       const placedStep = activeQuizSteps.find(s => s.step_num === row.image_id);
-      img_ok = placedStep && (placedStep.image_url === correct_step.image_url);
+      if (placedStep) {
+        const correctImg = (correct_step.image_url || '').trim();
+        const placedImg = (placedStep.image_url || '').trim();
+        if (!correctImg) {
+          img_ok = !placedImg;
+        } else {
+          img_ok = (placedImg === correctImg);
+        }
+      }
     }
     
     let left_ok = false;
