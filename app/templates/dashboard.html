@@ -85,7 +85,7 @@
 <body class="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800">
 
   <!-- Left Sidebar -->
-  <aside id="sidebar" class="w-0 opacity-0 pointer-events-none overflow-hidden bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20 flex-shrink-0 transition-all duration-300 ease-in-out">
+  <aside id="sidebar" class="sidebar-open w-full md:w-64 opacity-100 overflow-hidden bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20 flex-shrink-0 transition-all duration-300 ease-in-out">
     <!-- Sidebar Header -->
     <div class="px-6 py-5 flex items-center gap-3 border-b border-slate-800">
       <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -365,7 +365,7 @@
                 <h2 id="editQuizTitle" class="text-xl font-bold text-slate-900">——</h2>
                 <p id="editQuizSub" class="text-xs text-slate-400 font-medium">Mã đề thi: <span class="font-bold text-slate-600" id="editQuizCode">——</span></p>
               </div>
-              <button onclick="openStepModal(false)" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-500/10">
+              <button id="btnAddNewStep" onclick="openStepModal(false)" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-500/10">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -374,7 +374,7 @@
             </div>
 
             <!-- Steps Table -->
-            <div class="overflow-x-auto custom-scrollbar">
+            <div id="stepsTableContainer" class="overflow-x-auto custom-scrollbar">
               <table class="w-full text-xs">
                 <thead>
                   <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold uppercase tracking-wider">
@@ -392,6 +392,9 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Custom QC Step Editor Form -->
+            <div id="qcStepEditorContainer" class="hidden"></div>
           </div>
         </div>
       </section>
@@ -456,6 +459,13 @@
           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Mã đề thi</label>
           <input type="text" id="modalQuizCode" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm font-semibold text-slate-700" placeholder="Ví dụ: option3, option4" />
           <p class="text-[10px] text-slate-400 mt-1">Sử dụng chữ cái viết liền không dấu (không được đặt trùng với mã hiện tại và tránh 'option2').</p>
+        </div>
+        <div id="quizFormatContainer">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Định dạng đề thi</label>
+          <select id="modalQuizFormat" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm font-semibold text-slate-700">
+            <option value="option1">Kiểm tra thao tác đúc (Matching Grid)</option>
+            <option value="option4">Kiểm tra chất lượng (Quality Control)</option>
+          </select>
         </div>
         <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
           <button type="button" onclick="closeQuizModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-500 font-semibold text-sm hover:bg-slate-50 transition">Hủy</button>
@@ -591,6 +601,7 @@
     let activeTab = 'sessions';
     function switchTab(tabName) {
       activeTab = tabName;
+      window.location.hash = tabName;
       
       // Update UI tabs hidden state
       const tabs = ['sessions', 'accounts', 'quizzes'];
@@ -722,6 +733,16 @@
               <th class="px-4 py-3 text-center rounded-r-xl w-32">Kết quả</th>
             </tr>
           `;
+        } else if (data.quiz_format === 'option3' || data.quiz_format === 'option4') {
+          thead.innerHTML = `
+            <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
+              <th class="px-6 py-3.5 text-left rounded-l-xl w-16">Hạng</th>
+              <th class="px-6 py-3.5 text-left">Học viên</th>
+              <th class="px-6 py-3.5 text-center">Tổng điểm</th>
+              <th class="px-6 py-3.5 text-left">Chi tiết</th>
+              <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Trạng thái</th>
+            </tr>
+          `;
         } else {
           thead.innerHTML = `
             <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
@@ -735,7 +756,7 @@
 
         const tbody = document.getElementById('resultsBody');
         if (students.length === 0) {
-          const colSpan = data.quiz_type === 'option2' ? 6 : 4;
+          const colSpan = data.quiz_type === 'option2' ? 6 : (data.quiz_format === 'option3' || data.quiz_format === 'option4' ? 5 : 4);
           tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-slate-400 py-8">Chưa có học viên nào</td></tr>`;
           return;
         }
@@ -782,6 +803,16 @@
                 <td class="px-4 py-3.5 text-center">${resultBadge}</td>
               </tr>
             `;
+          } else if (data.quiz_format === 'option3' || data.quiz_format === 'option4') {
+            return `
+              <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+                <td class="px-6 py-4 font-bold text-slate-500">${rank}</td>
+                <td class="px-6 py-4 font-bold text-slate-800">${escHtml(s.name)}</td>
+                <td class="px-6 py-4 text-center font-extrabold text-slate-900">${s.score}/${data.total_steps}</td>
+                <td class="px-6 py-4 text-left text-slate-500 font-bold">${s.progress_text || "—"}</td>
+                <td class="px-6 py-4 text-center">${statusText}</td>
+              </tr>
+            `;
           } else {
             const pct = Math.round((s.score / data.total_steps) * 100);
             const barColor = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500';
@@ -802,7 +833,7 @@
                     <span class="font-extrabold text-slate-700">${s.score}/${data.total_steps}</span>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td class="px-6 py-4 text-center font-bold">
                   ${statusText}
                 </td>
               </tr>`;
@@ -1031,8 +1062,11 @@
             document.getElementById('modalQuizCode').disabled = true;
           }
         }
+        document.getElementById('quizFormatContainer').classList.add('hidden');
       } else {
         title.textContent = 'Tạo đề thi mới';
+        document.getElementById('quizFormatContainer').classList.remove('hidden');
+        document.getElementById('modalQuizFormat').value = 'option1';
       }
 
       modal.classList.remove('hidden');
@@ -1047,6 +1081,7 @@
       const quizId = document.getElementById('modalQuizId').value;
       const title = document.getElementById('modalQuizTitle').value.trim();
       const code = document.getElementById('modalQuizCode').value.trim();
+      const quiz_format = document.getElementById('modalQuizFormat').value;
 
       const method = quizId ? 'PUT' : 'POST';
       const url = quizId ? `/quiz/options/${quizId}` : '/quiz/options';
@@ -1055,7 +1090,7 @@
         const res = await fetch(url, {
           method: method,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, code })
+          body: JSON.stringify({ title, code, quiz_format })
         });
         const data = await res.json();
         
@@ -1114,36 +1149,488 @@
         if (!res.ok) return;
         currentQuizSteps = await res.json();
 
-        const tbody = document.getElementById('stepsTableBody');
-        if (currentQuizSteps.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 py-8">Đề thi này chưa có bước nào. Hãy thêm bước đầu tiên!</td></tr>';
-          return;
-        }
+        const q = quizzesList.find(x => x.id === currentEditingQuizId);
+        const qFormat = q ? q.quiz_format : 'option1';
 
-        tbody.innerHTML = currentQuizSteps.map(s => {
-          const imgHtml = s.image_url 
-            ? `<img src="${s.image_url}" class="w-16 h-12 object-cover rounded border border-slate-200" />`
-            : `<span class="text-[10px] text-slate-400 italic">Chưa có ảnh</span>`;
+        if (qFormat === 'option4') {
+          // Hide standard
+          document.getElementById('stepsTableContainer').classList.add('hidden');
+          document.getElementById('btnAddNewStep').classList.add('hidden');
+          document.getElementById('qcStepEditorContainer').classList.remove('hidden');
 
-          return `
-            <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
-              <td class="px-4 py-3 text-center font-bold text-slate-500">${s.step_num}</td>
-              <td class="px-4 py-3">${imgHtml}</td>
-              <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.left_text)}">${escHtml(s.left_text || '—')}</td>
-              <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.right_text)}">${escHtml(s.right_text || '—')}</td>
-              <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.note_text)}">${escHtml(s.note_text || '—')}</td>
-              <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.reason_text)}">${escHtml(s.reason_text || '—')}</td>
-              <td class="px-4 py-3 text-center">
-                <div class="flex justify-center gap-1.5">
-                  <button onclick="openStepModal(true, ${s.id})" class="text-blue-600 hover:text-blue-800 font-bold px-2 py-1 bg-blue-50 border border-blue-150 rounded transition">Sửa</button>
-                  <button onclick="deleteStep(${s.id})" class="text-red-600 hover:text-red-800 font-bold px-2 py-1 bg-red-50 border border-red-150 rounded transition">Xóa</button>
+          // Fetch available images
+          const imgRes = await fetch('/quiz/imgoptions4');
+          const imgOptions = imgRes.ok ? await imgRes.json() : [];
+
+          // Render form
+          let html = `
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <!-- LEFT COLUMN: ODD TEST -->
+              <div class="space-y-6">
+                <div class="bg-blue-50 text-blue-700 rounded-2xl p-4 font-bold text-sm border border-blue-100 flex justify-between items-center">
+                  <span>⚡ ĐỀ LẺ (Đề tài 1, 3, 5, 7)</span>
                 </div>
-              </td>
-            </tr>
+                
+                <!-- Topic 1 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-150 pb-2 gap-2">
+                    <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Đề tài (1): Thao tác lựa theo giới hạn vật mẫu</h4>
+                    <div class="flex flex-wrap gap-2 items-center">
+                      <div class="flex items-center gap-1.5">
+                        <label class="text-[10px] text-slate-500 font-bold uppercase">Hệ số:</label>
+                        <input type="number" id="edit_o4_t1_weight" step="any" value="${currentQuizSteps[0]?.reason_text || '2'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="2" />
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <label class="text-[10px] text-slate-500 font-bold uppercase">Trừ thiếu:</label>
+                        <input type="number" id="edit_o4_t1_penalty_deficit" step="any" value="${currentQuizSteps[0]?.right_text !== undefined && currentQuizSteps[0]?.right_text !== '' ? currentQuizSteps[0]?.right_text : '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <label class="text-[10px] text-slate-500 font-bold uppercase">Trừ thừa:</label>
+                        <input type="number" id="edit_o4_t1_penalty_excess" step="any" value="${currentQuizSteps[0]?.note_text !== undefined && currentQuizSteps[0]?.note_text !== '' ? currentQuizSteps[0]?.note_text : '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-4 gap-2">
+                    ${[1, 2, 3, 4].map(i => {
+                      const val = currentQuizSteps[i - 1]?.left_text || "";
+                      return `
+                        <div>
+                          <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">No ${i}</label>
+                          <input type="number" id="edit_o4_t1_q${i}" value="${val}" class="w-full bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-center text-xs font-bold text-slate-700" placeholder="0" />
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <!-- Topic 3 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div class="flex justify-between items-center border-b border-slate-150 pb-2">
+                    <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Đề tài (3): Tìm ra chỗ bị lỗi</h4>
+                    <div class="flex items-center gap-1.5">
+                      <label class="text-[10px] text-slate-500 font-bold uppercase">Hệ số điểm:</label>
+                      <input type="number" id="edit_o4_t3_weight" value="${currentQuizSteps[8]?.reason_text || '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    ${[1, 2, 3, 4].map(i => {
+                      const step = currentQuizSteps[8 + (i - 1)] || {};
+                      return `
+                        <div class="flex gap-2 items-center">
+                          <span class="text-xs font-bold text-slate-400 w-4">${i}</span>
+                          <input type="text" id="edit_o4_t3_loc_${i}" value="${step.left_text || ""}" class="flex-1 min-w-0 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700" placeholder="Vị trí lỗi" />
+                          <input type="text" id="edit_o4_t3_stat_${i}" value="${step.right_text || ""}" class="flex-1 min-w-0 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700" placeholder="Tình trạng lỗi" />
+                          <input type="number" id="edit_o4_t3_q_${i}" value="${step.note_text || ""}" class="w-16 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-center text-xs font-bold text-slate-700" placeholder="SL" />
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <!-- Topic 5 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div class="flex justify-between items-center border-b border-slate-150 pb-2">
+                    <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Đề tài (5): Phát hiện dị phẩm</h4>
+                    <div class="flex items-center gap-1.5">
+                      <label class="text-[10px] text-slate-500 font-bold uppercase">Hệ số điểm:</label>
+                      <input type="number" id="edit_o4_t5_weight" value="${currentQuizSteps[16]?.reason_text || '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    ${[1, 2, 3, 4].map(i => {
+                      const step = currentQuizSteps[16 + (i - 1)] || {};
+                      return `
+                        <div class="flex gap-2 items-center">
+                          <span class="text-xs font-bold text-slate-400 w-4">${i}</span>
+                          <input type="text" id="edit_o4_t5_loc_${i}" value="${step.left_text || ""}" class="flex-1 min-w-0 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700" placeholder="Vị trí lỗi" />
+                          <input type="text" id="edit_o4_t5_stat_${i}" value="${step.right_text || ""}" class="flex-1 min-w-0 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700" placeholder="Tình trạng lỗi" />
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <!-- Topic 7 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div class="flex justify-between items-center border-b border-slate-150 pb-2">
+                    <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Đề tài (7): Ghi biểu đồ của phế phẩm</h4>
+                    <div class="flex items-center gap-1.5">
+                      <label class="text-[10px] text-slate-500 font-bold uppercase">Hệ số điểm:</label>
+                      <input type="number" id="edit_o4_t7_weight" value="${currentQuizSteps[24]?.reason_text || '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                      <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Hình ảnh mẫu</label>
+                      <select id="edit_o4_t7_img" onchange="updateO4AdminImgPreview('t7', this.value)" class="w-full bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700">
+                        <option value="">-- Chọn hình ảnh --</option>
+                        ${imgOptions.map(img => {
+                          const filename = img.split('/').pop();
+                          const currentFilename = (currentQuizSteps[24]?.image_url || "").split('/').pop();
+                          const selected = filename === currentFilename ? "selected" : "";
+                          return `<option value="${img}" ${selected}>${filename}</option>`;
+                        }).join('')}
+                      </select>
+                      
+                      <!-- Live Preview Frame below dropdown -->
+                      <div class="mt-2 w-full h-32 border border-slate-200 rounded-xl overflow-hidden bg-white flex items-center justify-center p-2">
+                        <img id="edit_o4_t7_img_preview" src="${currentQuizSteps[24]?.image_url || ''}" class="max-w-full max-h-full object-contain ${currentQuizSteps[24]?.image_url ? '' : 'hidden'}" />
+                        <span id="edit_o4_t7_img_placeholder" class="text-[10px] text-slate-400 font-medium ${currentQuizSteps[24]?.image_url ? 'hidden' : ''}">Chưa chọn hình ảnh</span>
+                      </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                      <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Số lượng</label>
+                      <input type="number" id="edit_o4_t7_quant" value="${currentQuizSteps[24]?.left_text || ""}" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-center text-sm font-bold text-slate-700" placeholder="0" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- RIGHT COLUMN: EVEN TEST -->
+              <div class="space-y-6">
+                <div class="bg-purple-50 text-purple-700 rounded-2xl p-4 font-bold text-sm border border-purple-100 flex justify-between items-center">
+                  <span>🌀 ĐỀ CHẴN (Đề tài 2, 4, 6, 8)</span>
+                </div>
+
+                <!-- Topic 2 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-150 pb-2 gap-2">
+                    <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Đề tài (2): Thao tác lựa theo giới hạn vật mẫu</h4>
+                    <div class="flex flex-wrap gap-2 items-center">
+                      <div class="flex items-center gap-1.5">
+                        <label class="text-[10px] text-slate-500 font-bold uppercase">Hệ số:</label>
+                        <input type="number" id="edit_o4_t2_weight" step="any" value="${currentQuizSteps[4]?.reason_text || '2'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="2" />
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <label class="text-[10px] text-slate-500 font-bold uppercase">Trừ thiếu:</label>
+                        <input type="number" id="edit_o4_t2_penalty_deficit" step="any" value="${currentQuizSteps[4]?.right_text !== undefined && currentQuizSteps[4]?.right_text !== '' ? currentQuizSteps[4]?.right_text : '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <label class="text-[10px] text-slate-500 font-bold uppercase">Trừ thừa:</label>
+                        <input type="number" id="edit_o4_t2_penalty_excess" step="any" value="${currentQuizSteps[4]?.note_text !== undefined && currentQuizSteps[4]?.note_text !== '' ? currentQuizSteps[4]?.note_text : '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-4 gap-2">
+                    ${[1, 2, 3, 4].map(i => {
+                      const val = currentQuizSteps[4 + (i - 1)]?.left_text || "";
+                      return `
+                        <div>
+                          <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">No ${i}</label>
+                          <input type="number" id="edit_o4_t2_q${i}" value="${val}" class="w-full bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-center text-xs font-bold text-slate-700" placeholder="0" />
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <!-- Topic 4 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div class="flex justify-between items-center border-b border-slate-150 pb-2">
+                    <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Đề tài (4): Tìm ra chỗ bị lỗi</h4>
+                    <div class="flex items-center gap-1.5">
+                      <label class="text-[10px] text-slate-500 font-bold uppercase">Hệ số điểm:</label>
+                      <input type="number" id="edit_o4_t4_weight" value="${currentQuizSteps[12]?.reason_text || '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    ${[1, 2, 3, 4].map(i => {
+                      const step = currentQuizSteps[12 + (i - 1)] || {};
+                      return `
+                        <div class="flex gap-2 items-center">
+                          <span class="text-xs font-bold text-slate-400 w-4">${i}</span>
+                          <input type="text" id="edit_o4_t4_loc_${i}" value="${step.left_text || ""}" class="flex-1 min-w-0 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700" placeholder="Vị trí lỗi" />
+                          <input type="text" id="edit_o4_t4_stat_${i}" value="${step.right_text || ""}" class="flex-1 min-w-0 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700" placeholder="Tình trạng lỗi" />
+                          <input type="number" id="edit_o4_t4_q_${i}" value="${step.note_text || ""}" class="w-16 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-center text-xs font-bold text-slate-700" placeholder="SL" />
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <!-- Topic 6 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div class="flex justify-between items-center border-b border-slate-150 pb-2">
+                    <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Đề tài (6): Phát hiện dị phẩm</h4>
+                    <div class="flex items-center gap-1.5">
+                      <label class="text-[10px] text-slate-500 font-bold uppercase">Hệ số điểm:</label>
+                      <input type="number" id="edit_o4_t6_weight" value="${currentQuizSteps[20]?.reason_text || '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    ${[1, 2, 3, 4].map(i => {
+                      const step = currentQuizSteps[20 + (i - 1)] || {};
+                      return `
+                        <div class="flex gap-2 items-center">
+                          <span class="text-xs font-bold text-slate-400 w-4">${i}</span>
+                          <input type="text" id="edit_o4_t6_loc_${i}" value="${step.left_text || ""}" class="flex-1 min-w-0 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700" placeholder="Vị trí lỗi" />
+                          <input type="text" id="edit_o4_t6_stat_${i}" value="${step.right_text || ""}" class="flex-1 min-w-0 bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700" placeholder="Tình trạng lỗi" />
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                <!-- Topic 8 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div class="flex justify-between items-center border-b border-slate-150 pb-2">
+                    <h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Đề tài (8): Ghi biểu đồ của phế phẩm</h4>
+                    <div class="flex items-center gap-1.5">
+                      <label class="text-[10px] text-slate-500 font-bold uppercase">Hệ số điểm:</label>
+                      <input type="number" id="edit_o4_t8_weight" value="${currentQuizSteps[25]?.reason_text || '1'}" class="w-12 bg-white border border-slate-250 rounded-lg px-1.5 py-0.5 text-center text-xs font-extrabold text-slate-700" placeholder="1" />
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                      <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Hình ảnh mẫu</label>
+                      <select id="edit_o4_t8_img" onchange="updateO4AdminImgPreview('t8', this.value)" class="w-full bg-white border border-slate-250 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-700">
+                        <option value="">-- Chọn hình ảnh --</option>
+                        ${imgOptions.map(img => {
+                          const filename = img.split('/').pop();
+                          const currentFilename = (currentQuizSteps[25]?.image_url || "").split('/').pop();
+                          const selected = filename === currentFilename ? "selected" : "";
+                          return `<option value="${img}" ${selected}>${filename}</option>`;
+                        }).join('')}
+                      </select>
+                      
+                      <!-- Live Preview Frame below dropdown -->
+                      <div class="mt-2 w-full h-32 border border-slate-200 rounded-xl overflow-hidden bg-white flex items-center justify-center p-2">
+                        <img id="edit_o4_t8_img_preview" src="${currentQuizSteps[25]?.image_url || ''}" class="max-w-full max-h-full object-contain ${currentQuizSteps[25]?.image_url ? '' : 'hidden'}" />
+                        <span id="edit_o4_t8_img_placeholder" class="text-[10px] text-slate-400 font-medium ${currentQuizSteps[25]?.image_url ? 'hidden' : ''}">Chưa chọn hình ảnh</span>
+                      </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                      <label class="block text-[10px] text-slate-500 font-bold uppercase mb-1">Số lượng</label>
+                      <input type="number" id="edit_o4_t8_quant" value="${currentQuizSteps[25]?.left_text || ""}" class="w-full bg-white border border-slate-250 rounded-xl px-3 py-2 text-center text-sm font-bold text-slate-700" placeholder="0" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Save button -->
+            <div class="pt-4 border-t border-slate-100 flex justify-end">
+              <button id="btnSaveQcSteps" onclick="saveQcStepsBatch()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg shadow-emerald-500/10 transition active:scale-[0.98]">
+                Lưu cấu hình đề thi chất lượng
+              </button>
+            </div>
           `;
-        }).join('');
+          document.getElementById('qcStepEditorContainer').innerHTML = html;
+        } else {
+          // Show standard
+          document.getElementById('stepsTableContainer').classList.remove('hidden');
+          document.getElementById('btnAddNewStep').classList.remove('hidden');
+          document.getElementById('qcStepEditorContainer').classList.add('hidden');
+
+          const tbody = document.getElementById('stepsTableBody');
+          if (currentQuizSteps.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-400 py-8">Đề thi này chưa có bước nào. Hãy thêm bước đầu tiên!</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = currentQuizSteps.map(s => {
+            const imgHtml = s.image_url 
+              ? `<img src="${s.image_url}" class="w-16 h-12 object-cover rounded border border-slate-200" />`
+              : `<span class="text-[10px] text-slate-400 italic">Chưa có ảnh</span>`;
+
+            return `
+              <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+                <td class="px-4 py-3 text-center font-bold text-slate-500">${s.step_num}</td>
+                <td class="px-4 py-3">${imgHtml}</td>
+                <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.left_text)}">${escHtml(s.left_text || '—')}</td>
+                <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.right_text)}">${escHtml(s.right_text || '—')}</td>
+                <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.note_text)}">${escHtml(s.note_text || '—')}</td>
+                <td class="px-4 py-3 max-w-[200px] truncate" title="${escHtml(s.reason_text)}">${escHtml(s.reason_text || '—')}</td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex justify-center gap-1.5">
+                    <button onclick="openStepModal(true, ${s.id})" class="text-blue-600 hover:text-blue-800 font-bold px-2 py-1 bg-blue-50 border border-blue-150 rounded transition">Sửa</button>
+                    <button onclick="deleteStep(${s.id})" class="text-red-600 hover:text-red-800 font-bold px-2 py-1 bg-red-50 border border-red-150 rounded transition">Xóa</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
       } catch (err) {
         console.error('Lỗi tải các bước đề thi', err);
+      }
+    }
+
+    async function saveQcStepsBatch() {
+      const btn = document.getElementById('btnSaveQcSteps');
+      btn.disabled = true;
+      btn.textContent = 'Đang lưu...';
+
+      const steps = [];
+
+      // Topic 1 weight & penalty rates
+      const t1_weight = document.getElementById('edit_o4_t1_weight').value || "2";
+      const t1_pen_def = document.getElementById('edit_o4_t1_penalty_deficit').value || "1";
+      const t1_pen_exc = document.getElementById('edit_o4_t1_penalty_excess').value || "1";
+      // Topic 1: steps 1..4 (indices 0..3)
+      for (let i = 1; i <= 4; i++) {
+        const step = currentQuizSteps[i - 1];
+        if (step) {
+          steps.push({
+            id: step.id,
+            left_text: document.getElementById(`edit_o4_t1_q${i}`).value,
+            right_text: t1_pen_def,
+            note_text: t1_pen_exc,
+            reason_text: t1_weight,
+            image_url: ""
+          });
+        }
+      }
+
+      // Topic 2 weight & penalty rates
+      const t2_weight = document.getElementById('edit_o4_t2_weight').value || "2";
+      const t2_pen_def = document.getElementById('edit_o4_t2_penalty_deficit').value || "1";
+      const t2_pen_exc = document.getElementById('edit_o4_t2_penalty_excess').value || "1";
+      // Topic 2: steps 5..8 (indices 4..7)
+      for (let i = 1; i <= 4; i++) {
+        const step = currentQuizSteps[4 + (i - 1)];
+        if (step) {
+          steps.push({
+            id: step.id,
+            left_text: document.getElementById(`edit_o4_t2_q${i}`).value,
+            right_text: t2_pen_def,
+            note_text: t2_pen_exc,
+            reason_text: t2_weight,
+            image_url: ""
+          });
+        }
+      }
+
+      // Topic 3 weight
+      const t3_weight = document.getElementById('edit_o4_t3_weight').value || "1";
+      // Topic 3: steps 9..12 (indices 8..11)
+      for (let i = 1; i <= 4; i++) {
+        const step = currentQuizSteps[8 + (i - 1)];
+        if (step) {
+          steps.push({
+            id: step.id,
+            left_text: document.getElementById(`edit_o4_t3_loc_${i}`).value,
+            right_text: document.getElementById(`edit_o4_t3_stat_${i}`).value,
+            note_text: document.getElementById(`edit_o4_t3_q_${i}`).value,
+            reason_text: t3_weight,
+            image_url: ""
+          });
+        }
+      }
+
+      // Topic 4 weight
+      const t4_weight = document.getElementById('edit_o4_t4_weight').value || "1";
+      // Topic 4: steps 13..16 (indices 12..15)
+      for (let i = 1; i <= 4; i++) {
+        const step = currentQuizSteps[12 + (i - 1)];
+        if (step) {
+          steps.push({
+            id: step.id,
+            left_text: document.getElementById(`edit_o4_t4_loc_${i}`).value,
+            right_text: document.getElementById(`edit_o4_t4_stat_${i}`).value,
+            note_text: document.getElementById(`edit_o4_t4_q_${i}`).value,
+            reason_text: t4_weight,
+            image_url: ""
+          });
+        }
+      }
+
+      // Topic 5 weight
+      const t5_weight = document.getElementById('edit_o4_t5_weight').value || "1";
+      // Topic 5: steps 17..20 (indices 16..19)
+      for (let i = 1; i <= 4; i++) {
+        const step = currentQuizSteps[16 + (i - 1)];
+        if (step) {
+          steps.push({
+            id: step.id,
+            left_text: document.getElementById(`edit_o4_t5_loc_${i}`).value,
+            right_text: document.getElementById(`edit_o4_t5_stat_${i}`).value,
+            note_text: "",
+            reason_text: t5_weight,
+            image_url: ""
+          });
+        }
+      }
+
+      // Topic 6 weight
+      const t6_weight = document.getElementById('edit_o4_t6_weight').value || "1";
+      // Topic 6: steps 21..24 (indices 20..23)
+      for (let i = 1; i <= 4; i++) {
+        const step = currentQuizSteps[20 + (i - 1)];
+        if (step) {
+          steps.push({
+            id: step.id,
+            left_text: document.getElementById(`edit_o4_t6_loc_${i}`).value,
+            right_text: document.getElementById(`edit_o4_t6_stat_${i}`).value,
+            note_text: "",
+            reason_text: t6_weight,
+            image_url: ""
+          });
+        }
+      }
+
+      // Topic 7 weight
+      const t7_weight = document.getElementById('edit_o4_t7_weight').value || "1";
+      // Topic 7: step 25 (index 24)
+      if (currentQuizSteps[24]) {
+        steps.push({
+          id: currentQuizSteps[24].id,
+          left_text: document.getElementById('edit_o4_t7_quant').value,
+          right_text: "",
+          note_text: "",
+          reason_text: t7_weight,
+          image_url: document.getElementById('edit_o4_t7_img').value
+        });
+      }
+
+      // Topic 8 weight
+      const t8_weight = document.getElementById('edit_o4_t8_weight').value || "1";
+      // Topic 8: step 26 (index 25)
+      if (currentQuizSteps[25]) {
+        steps.push({
+          id: currentQuizSteps[25].id,
+          left_text: document.getElementById('edit_o4_t8_quant').value,
+          right_text: "",
+          note_text: "",
+          reason_text: t8_weight,
+          image_url: document.getElementById('edit_o4_t8_img').value
+        });
+      }
+
+      try {
+        const res = await fetch(`/quiz/options/${currentEditingQuizId}/steps-batch`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ steps })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          backToQuizList();
+        } else {
+          alert(data.message || 'Lỗi cập nhật cấu hình');
+        }
+      } catch (err) {
+        alert('Lỗi kết nối: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Lưu cấu hình đề thi chất lượng';
+      }
+    }
+
+    function updateO4AdminImgPreview(topic, value) {
+      const imgEl = document.getElementById(`edit_o4_${topic}_img_preview`);
+      const placeholderEl = document.getElementById(`edit_o4_${topic}_img_placeholder`);
+      if (value) {
+        imgEl.src = value;
+        imgEl.classList.remove('hidden');
+        placeholderEl.classList.add('hidden');
+      } else {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        placeholderEl.classList.remove('hidden');
       }
     }
 
@@ -1287,6 +1774,12 @@
     (async () => {
       // Load dropdown first
       await loadQuizDropdown();
+
+      // Check URL hash to switch to the correct tab if specified
+      const initialHash = window.location.hash.replace('#', '');
+      if (['sessions', 'accounts', 'quizzes'].includes(initialHash)) {
+        switchTab(initialHash);
+      }
 
       // Check if there is an active session
       try {

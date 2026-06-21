@@ -45,6 +45,8 @@ function clearStudentSession() {
     if (key && (key.startsWith('gridPlacement_') || 
                 key.startsWith('completedSubQuizzes_') || 
                 key.startsWith('subQuizScores_') || 
+                key.startsWith('o3Answers_') || 
+                key.startsWith('o4Answers_') || 
                 key.startsWith('submitted_') || 
                 key.startsWith('results_'))) {
       localStorage.removeItem(key);

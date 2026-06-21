@@ -1,5 +1,6 @@
 import random
 import string
+import os
 
 from flask import Blueprint, request, jsonify, abort
 from app.db.database import db
@@ -87,6 +88,7 @@ def join_quiz():
 # ─── POST /quiz/submit ───────────────────────────────────────────
 @quiz_bp.post("/submit")
 def submit_quiz():
+    import os
     data = request.get_json(force=True)
     student_id = data.get("student_id")
 
@@ -98,7 +100,260 @@ def submit_quiz():
     if not session:
         abort(404, description="Không tìm thấy phòng thi")
 
-    if session.quiz_type == "option2":
+    from app.models.quiz_option import QuizOption
+    from app.models.quiz_step import QuizStep
+
+    option = QuizOption.query.filter_by(code=session.quiz_type).first()
+
+    def safe_int(val):
+        try:
+            return int(float(str(val).strip()))
+        except Exception:
+            return 0
+
+    def safe_float(val, default=1.0):
+        try:
+            return float(str(val).strip())
+        except Exception:
+            return default
+
+    if option and option.quiz_format == "option3":
+        device_answers = data.get("device_answers", [])
+        quality_answers = data.get("quality_answers", [])
+
+        steps = QuizStep.query.filter_by(option_id=option.id).order_by(QuizStep.step_num).all()
+        device_steps = [s for s in steps if s.step_num <= 16]
+        quality_steps = [s for s in steps if s.step_num > 16]
+
+        device_score = 0
+        for i in range(16):
+            if i < 2:
+                device_score += 1
+            else:
+                user_text = str(device_answers[i]).strip().lower() if i < len(device_answers) and device_answers[i] else ""
+                correct_text = device_steps[i].left_text.strip().lower() if i < len(device_steps) and device_steps[i].left_text else ""
+                if user_text == correct_text and correct_text:
+                    device_score += 1
+
+        quality_score = 0
+        for j in range(20):
+            if j < 2:
+                quality_score += 1
+            else:
+                user_text = str(quality_answers[j]).strip().lower() if j < len(quality_answers) and quality_answers[j] else ""
+                correct_text = quality_steps[j].left_text.strip().lower() if j < len(quality_steps) and quality_steps[j].left_text else ""
+                if user_text == correct_text and correct_text:
+                    quality_score += 1
+
+        total_score = device_score + quality_score
+        student.score = total_score
+        student.answer_order = {
+            "device_answers": device_answers,
+            "quality_answers": quality_answers,
+            "device_score": device_score,
+            "quality_score": quality_score
+        }
+        db.session.commit()
+        return jsonify({
+            "done": True,
+            "score": total_score,
+            "total": 36,
+            "device_score": device_score,
+            "quality_score": quality_score
+        })
+
+    elif option and option.quiz_format == "option4":
+        odd_answers = data.get("odd_answers", {})
+        even_answers = data.get("even_answers", {})
+
+        steps = QuizStep.query.filter_by(option_id=option.id).order_by(QuizStep.step_num).all()
+        # Ensure we have at least 26 steps seeded
+        if len(steps) < 26:
+            abort(500, description="Dữ liệu đáp án chưa hoàn thiện (cần 26 bước)")
+
+        # ─── ODD TEST SCORING (Topics 1, 3, 5, 7) ───
+        odd_score = 0
+        odd_max = 0
+
+        # Topic 1: steps 1..4 (steps[0..3]) - Quantity x weight (with custom penalties)
+        t1_ans = odd_answers.get("t1", [])
+        for i in range(4):
+            correct_q = safe_int(steps[i].left_text)
+            weight = safe_int(steps[i].reason_text) if steps[i].reason_text else 2
+            entered_q = safe_int(t1_ans[i]) if i < len(t1_ans) else 0
+            pen_def = safe_float(steps[i].right_text, 1.0)
+            pen_exc = safe_float(steps[i].note_text, 1.0)
+            if entered_q < correct_q:
+                row_score = max(0.0, float(correct_q) - float(correct_q - entered_q) * pen_def)
+            elif entered_q > correct_q:
+                row_score = max(0.0, float(correct_q) - float(entered_q - correct_q) * pen_exc)
+            else:
+                row_score = float(correct_q)
+            odd_score += row_score * weight
+            odd_max += correct_q * weight
+
+        # Topic 3: steps 9..12 (steps[8..11]) - Loc, Stat, Quant x weight
+        t3_ans = odd_answers.get("t3", [])
+        for i in range(4):
+            step = steps[8 + i]
+            correct_loc = step.left_text.strip().lower() if step.left_text else ""
+            correct_stat = step.right_text.strip().lower() if step.right_text else ""
+            correct_q = safe_int(step.note_text)
+            weight = safe_int(step.reason_text) if step.reason_text else 1
+
+            user_ans = t3_ans[i] if i < len(t3_ans) else {}
+            user_loc = str(user_ans.get("loc", "")).strip().lower()
+            user_stat = str(user_ans.get("stat", "")).strip().lower()
+            user_q = safe_int(user_ans.get("quant", 0))
+
+            if user_loc == correct_loc and user_stat == correct_stat:
+                if user_q <= correct_q:
+                    row_score = user_q
+                else:
+                    row_score = max(0, 2 * correct_q - user_q)
+            else:
+                row_score = 0
+            odd_score += row_score * weight
+            odd_max += correct_q * weight
+
+        # Topic 5: steps 17..20 (steps[16..19]) - Loc, Stat x weight
+        t5_ans = odd_answers.get("t5", [])
+        for i in range(4):
+            step = steps[16 + i]
+            correct_loc = step.left_text.strip().lower() if step.left_text else ""
+            correct_stat = step.right_text.strip().lower() if step.right_text else ""
+            weight = safe_int(step.reason_text) if step.reason_text else 1
+
+            user_ans = t5_ans[i] if i < len(t5_ans) else {}
+            user_loc = str(user_ans.get("loc", "")).strip().lower()
+            user_stat = str(user_ans.get("stat", "")).strip().lower()
+
+            if user_loc == correct_loc and user_stat == correct_stat:
+                odd_score += weight
+            odd_max += weight
+
+        # Topic 7: step 25 (steps[24]) - Image, Quant x weight
+        t7_ans = odd_answers.get("t7", {})
+        step = steps[24]
+        correct_img = os.path.basename(step.image_url.strip().replace("\\", "/")) if step.image_url else ""
+        correct_q = safe_int(step.left_text)
+        weight = safe_int(step.reason_text) if step.reason_text else 1
+
+        user_img = os.path.basename(str(t7_ans.get("image_url", "")).strip().replace("\\", "/"))
+        user_q = safe_int(t7_ans.get("quant", 0))
+
+        t7_score = 0
+        if user_img == correct_img and correct_img:
+            if user_q <= correct_q:
+                t7_score = user_q
+            else:
+                t7_score = max(0, 2 * correct_q - user_q)
+            odd_score += t7_score * weight
+        odd_max += correct_q * weight
+
+        # ─── EVEN TEST SCORING (Topics 2, 4, 6, 8) ───
+        even_score = 0
+        even_max = 0
+
+        # Topic 2: steps 5..8 (steps[4..7]) - Quantity x weight (with custom penalties)
+        t2_ans = even_answers.get("t2", [])
+        for i in range(4):
+            correct_q = safe_int(steps[4 + i].left_text)
+            weight = safe_int(steps[4 + i].reason_text) if steps[4 + i].reason_text else 2
+            entered_q = safe_int(t2_ans[i]) if i < len(t2_ans) else 0
+            pen_def = safe_float(steps[4 + i].right_text, 1.0)
+            pen_exc = safe_float(steps[4 + i].note_text, 1.0)
+            if entered_q < correct_q:
+                row_score = max(0.0, float(correct_q) - float(correct_q - entered_q) * pen_def)
+            elif entered_q > correct_q:
+                row_score = max(0.0, float(correct_q) - float(entered_q - correct_q) * pen_exc)
+            else:
+                row_score = float(correct_q)
+            even_score += row_score * weight
+            even_max += correct_q * weight
+
+        # Topic 4: steps 13..16 (steps[12..15]) - Loc, Stat, Quant x weight
+        t4_ans = even_answers.get("t4", [])
+        for i in range(4):
+            step = steps[12 + i]
+            correct_loc = step.left_text.strip().lower() if step.left_text else ""
+            correct_stat = step.right_text.strip().lower() if step.right_text else ""
+            correct_q = safe_int(step.note_text)
+            weight = safe_int(step.reason_text) if step.reason_text else 1
+
+            user_ans = t4_ans[i] if i < len(t4_ans) else {}
+            user_loc = str(user_ans.get("loc", "")).strip().lower()
+            user_stat = str(user_ans.get("stat", "")).strip().lower()
+            user_q = safe_int(user_ans.get("quant", 0))
+
+            if user_loc == correct_loc and user_stat == correct_stat:
+                if user_q <= correct_q:
+                    row_score = user_q
+                else:
+                    row_score = max(0, 2 * correct_q - user_q)
+            else:
+                row_score = 0
+            even_score += row_score * weight
+            even_max += correct_q * weight
+
+        # Topic 6: steps 21..24 (steps[20..23]) - Loc, Stat x weight
+        t6_ans = even_answers.get("t6", [])
+        for i in range(4):
+            step = steps[20 + i]
+            correct_loc = step.left_text.strip().lower() if step.left_text else ""
+            correct_stat = step.right_text.strip().lower() if step.right_text else ""
+            weight = safe_int(step.reason_text) if step.reason_text else 1
+
+            user_ans = t6_ans[i] if i < len(t6_ans) else {}
+            user_loc = str(user_ans.get("loc", "")).strip().lower()
+            user_stat = str(user_ans.get("stat", "")).strip().lower()
+
+            if user_loc == correct_loc and user_stat == correct_stat:
+                even_score += weight
+            even_max += weight
+
+        # Topic 8: step 26 (steps[25]) - Image, Quant x weight
+        t8_ans = even_answers.get("t8", {})
+        step = steps[25]
+        correct_img = os.path.basename(step.image_url.strip().replace("\\", "/")) if step.image_url else ""
+        correct_q = safe_int(step.left_text)
+        weight = safe_int(step.reason_text) if step.reason_text else 1
+
+        user_img = os.path.basename(str(t8_ans.get("image_url", "")).strip().replace("\\", "/"))
+        user_q = safe_int(t8_ans.get("quant", 0))
+
+        t8_score = 0
+        if user_img == correct_img and correct_img:
+            if user_q <= correct_q:
+                t8_score = user_q
+            else:
+                t8_score = max(0, 2 * correct_q - user_q)
+            even_score += t8_score * weight
+        even_max += correct_q * weight
+
+        total_score = odd_score + even_score
+        total_max = odd_max + even_max
+        student.score = int(round(total_score))
+        student.answer_order = {
+            "odd_answers": odd_answers,
+            "even_answers": even_answers,
+            "odd_score": odd_score,
+            "even_score": even_score,
+            "odd_max": odd_max,
+            "even_max": even_max
+        }
+        db.session.commit()
+        return jsonify({
+            "done": True,
+            "score": total_score,
+            "total": total_max,
+            "odd_score": odd_score,
+            "even_score": even_score,
+            "odd_max": odd_max,
+            "even_max": even_max
+        })
+
+    elif session.quiz_type == "option2":
         sub_quiz_id = str(data.get("sub_quiz_id"))
         sub_score = data.get("sub_score", 0)
 
@@ -124,9 +379,6 @@ def submit_quiz():
             "completed": list(ao["scores"].keys())
         })
     else:
-        from app.models.quiz_option import QuizOption
-        from app.models.quiz_step import QuizStep
-
         # Fetch option
         option = QuizOption.query.filter_by(code=session.quiz_type).first()
         if not option:
@@ -203,16 +455,51 @@ def get_results():
         .all()
     )
 
-    if session.quiz_type == "option2":
+    from app.models.quiz_option import QuizOption
+    from app.models.quiz_step import QuizStep
+    option = QuizOption.query.filter_by(code=session.quiz_type).first()
+
+    def safe_int(val):
+        try:
+            return int(float(str(val).strip()))
+        except Exception:
+            return 0
+
+    def fmt_score(val):
+        try:
+            val_f = float(val)
+            if val_f.is_integer():
+                return str(int(val_f))
+            return f"{val_f:.2f}".rstrip('0').rstrip('.')
+        except Exception:
+            return str(val)
+
+    if option:
+        if option.quiz_format == "option3":
+            total_steps = 36
+        elif option.quiz_format == "option4":
+            steps = QuizStep.query.filter_by(option_id=option.id).order_by(QuizStep.step_num).all()
+            if len(steps) >= 26:
+                odd_max = 0
+                even_max = 0
+                for i in range(4):
+                    odd_max += safe_int(steps[i].left_text) * (safe_int(steps[i].reason_text) if steps[i].reason_text else 2)
+                    even_max += safe_int(steps[4 + i].left_text) * (safe_int(steps[4 + i].reason_text) if steps[4 + i].reason_text else 2)
+                    odd_max += safe_int(steps[8 + i].note_text) * (safe_int(steps[8 + i].reason_text) if steps[8 + i].reason_text else 1)
+                    even_max += safe_int(steps[12 + i].note_text) * (safe_int(steps[12 + i].reason_text) if steps[12 + i].reason_text else 1)
+                    odd_max += safe_int(steps[16 + i].reason_text) if steps[16 + i].reason_text else 1
+                    even_max += safe_int(steps[20 + i].reason_text) if steps[20 + i].reason_text else 1
+                odd_max += safe_int(steps[24].left_text) * (safe_int(steps[24].reason_text) if steps[24].reason_text else 1)
+                even_max += safe_int(steps[25].left_text) * (safe_int(steps[25].reason_text) if steps[25].reason_text else 1)
+                total_steps = odd_max + even_max
+            else:
+                total_steps = 84
+        else:
+            total_steps = QuizStep.query.filter_by(option_id=option.id).count()
+    elif session.quiz_type == "option2":
         total_steps = sum(SUB_QUIZ_MAX_SCORES.values())
     else:
-        from app.models.quiz_option import QuizOption
-        from app.models.quiz_step import QuizStep
-        option = QuizOption.query.filter_by(code=session.quiz_type).first()
-        if option:
-            total_steps = QuizStep.query.filter_by(option_id=option.id).count()
-        else:
-            total_steps = 23
+        total_steps = 23
 
     def is_submitted(s):
         if session.quiz_type == "option2":
@@ -225,11 +512,26 @@ def get_results():
                 count = len(s.answer_order["scores"])
                 return f"Đã làm {count}/9 bài"
             return "Chưa làm bài nào"
+        if option and option.quiz_format == "option3":
+            if isinstance(s.answer_order, dict) and "device_score" in s.answer_order:
+                ds = s.answer_order["device_score"]
+                qs = s.answer_order["quality_score"]
+                return f"Trang 1: {ds}/16đ, Trang 2: {qs}/20đ"
+            return "Chưa nộp"
+        if option and option.quiz_format == "option4":
+            if isinstance(s.answer_order, dict) and "odd_score" in s.answer_order:
+                os_ = s.answer_order["odd_score"]
+                es_ = s.answer_order["even_score"]
+                o_max = s.answer_order.get("odd_max", 42)
+                e_max = s.answer_order.get("even_max", 42)
+                return f"Đề lẻ: {fmt_score(os_)}/{fmt_score(o_max)}đ, Đề chẵn: {fmt_score(es_)}/{fmt_score(e_max)}đ"
+            return "Chưa nộp"
         return ""
 
     return jsonify({
         "code": code,
         "quiz_type": session.quiz_type,
+        "quiz_format": option.quiz_format if option else "option1",
         "total_steps": total_steps,
         "students": [
             {
@@ -311,6 +613,7 @@ def get_definition(quiz_type):
         "title": option.title,
         "code": option.code,
         "is_custom": option.is_custom,
+        "quiz_format": option.quiz_format,
         "steps": [
             {
                 "id": s.id,
@@ -330,13 +633,13 @@ def get_definition(quiz_type):
 def get_options():
     from app.models.quiz_option import QuizOption
     options = QuizOption.query.all()
-    # Add Option 2 dynamically so it appears in list but is read-only
     result = [
         {
             "id": opt.id,
             "title": opt.title,
             "code": opt.code,
-            "is_custom": opt.is_custom
+            "is_custom": opt.is_custom,
+            "quiz_format": opt.quiz_format
         } for opt in options
     ]
     # Check if option2 is in the database, otherwise list it as system read-only
@@ -345,7 +648,8 @@ def get_options():
             "id": 9999,
             "title": "Kiểm tra TIE",
             "code": "option2",
-            "is_custom": False
+            "is_custom": False,
+            "quiz_format": "option2"
         })
     return jsonify(result)
 
@@ -353,23 +657,41 @@ def get_options():
 @quiz_bp.post("/options")
 def create_option():
     from app.models.quiz_option import QuizOption
+    from app.models.quiz_step import QuizStep
     data = request.get_json(force=True)
     title = (data.get("title") or "").strip()
     code = (data.get("code") or "").strip().lower()
+    quiz_format = (data.get("quiz_format") or "option1").strip()
 
     if not title or not code:
         return jsonify({"ok": False, "message": "Tiêu đề và mã đề thi không được để trống"}), 400
 
-    if code == "option2":
-        return jsonify({"ok": False, "message": "Không thể dùng mã 'option2' vì đây là mã bảo lưu hệ thống"}), 400
+    if code in ["option2", "option3", "option4"]:
+        return jsonify({"ok": False, "message": f"Không thể dùng mã '{code}' vì đây là mã bảo lưu hệ thống"}), 400
 
     existing = QuizOption.query.filter_by(code=code).first()
     if existing:
         return jsonify({"ok": False, "message": f"Mã đề thi '{code}' đã tồn tại"}), 400
 
-    option = QuizOption(title=title, code=code, is_custom=True)
+    option = QuizOption(title=title, code=code, is_custom=True, quiz_format=quiz_format)
     db.session.add(option)
     db.session.commit()
+
+    # Pre-seed 26 steps if format is option4
+    if quiz_format == "option4":
+        for i in range(26):
+            step = QuizStep(
+                option_id=option.id,
+                step_num=i + 1,
+                image_url="/static/imgoptions4/hinh1.png" if i == 24 else ("/static/imgoptions4/hinh2.png" if i == 25 else ""),
+                left_text="2" if i < 4 else ("3" if i < 8 else ""),
+                right_text="",
+                note_text="",
+                reason_text=""
+            )
+            db.session.add(step)
+        db.session.commit()
+
     return jsonify({"ok": True, "message": "Tạo đề thi mới thành công", "option_id": option.id})
 
 
@@ -380,8 +702,8 @@ def update_option(option_id):
     if not option:
         return jsonify({"ok": False, "message": "Đề thi không tồn tại"}), 404
 
-    if not option.is_custom and option.code == "option1":
-        # Allow editing Title for Option 1, but keep code unchanged
+    if not option.is_custom and option.code in ["option1", "option3", "option4"]:
+        # Allow editing Title, but keep code and format unchanged
         data = request.get_json(force=True)
         title = (data.get("title") or "").strip()
         if title:
@@ -396,6 +718,7 @@ def update_option(option_id):
     data = request.get_json(force=True)
     title = (data.get("title") or "").strip()
     code = (data.get("code") or "").strip().lower()
+    quiz_format = (data.get("quiz_format") or option.quiz_format).strip()
 
     if not title or not code:
         return jsonify({"ok": False, "message": "Tiêu đề và mã không được để trống"}), 400
@@ -407,6 +730,7 @@ def update_option(option_id):
         option.code = code
 
     option.title = title
+    option.quiz_format = quiz_format
     db.session.commit()
     return jsonify({"ok": True, "message": "Cập nhật đề thi thành công"})
 
@@ -546,4 +870,43 @@ def upload_image():
         return jsonify({"ok": True, "image_url": f"/static/uploads/{filename}"})
 
     return jsonify({"ok": False, "message": "Định dạng file không được hỗ trợ (chỉ chấp nhận png, jpg, jpeg, gif, webp)"}), 400
+
+
+# ─── GET /quiz/imgoptions4 ──────────────────────────────────────
+@quiz_bp.get("/imgoptions4")
+def list_imgoptions4():
+    from flask import current_app
+    img_dir = os.path.join(current_app.root_path, "static", "imgoptions4")
+    if not os.path.exists(img_dir):
+        return jsonify([])
+    files = [f for f in os.listdir(img_dir) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp'))]
+    return jsonify([f"/static/imgoptions4/{f}" for f in files])
+
+
+# ─── PUT /quiz/options/<int:option_id>/steps-batch ─────────────
+@quiz_bp.put("/options/<int:option_id>/steps-batch")
+def update_steps_batch(option_id):
+    from app.models.quiz_option import QuizOption
+    from app.models.quiz_step import QuizStep
+
+    option = QuizOption.query.get(option_id)
+    if not option:
+        return jsonify({"ok": False, "message": "Đề thi không tồn tại"}), 404
+
+    data = request.get_json(force=True)
+    steps_data = data.get("steps", [])
+
+    for s_data in steps_data:
+        step_id = s_data.get("id")
+        if step_id:
+            step = QuizStep.query.filter_by(id=step_id, option_id=option_id).first()
+            if step:
+                step.image_url = s_data.get("image_url") or ""
+                step.left_text = s_data.get("left_text") or ""
+                step.right_text = s_data.get("right_text") or ""
+                step.note_text = s_data.get("note_text") or ""
+                step.reason_text = s_data.get("reason_text") or ""
+
+    db.session.commit()
+    return jsonify({"ok": True, "message": "Cập nhật các cấu hình thành công"})
 

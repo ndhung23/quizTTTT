@@ -22,6 +22,12 @@ def init_db(app):
             print("Successfully added user_id column to quiz_sessions")
         except Exception:
             db.session.rollback()
+        try:
+            db.session.execute(db.text("ALTER TABLE quiz_options ADD COLUMN quiz_format VARCHAR(20) DEFAULT 'option1'"))
+            db.session.commit()
+            print("Successfully added quiz_format column to quiz_options")
+        except Exception:
+            db.session.rollback()
         _seed_users()
         _seed_quiz_options()
 
@@ -51,13 +57,15 @@ def _seed_users():
 
 
 def _seed_quiz_options():
-    """Seed initial Option 1 quiz and steps."""
+    """Seed initial Option 1, Option 3, Option 4 quizzes and steps."""
     from app.models.quiz_option import QuizOption
     from app.models.quiz_step import QuizStep
+    
+    # 1. OPTION 1
     try:
         option1 = QuizOption.query.filter_by(code="option1").first()
         if not option1:
-            option1 = QuizOption(title="Kiểm tra thao tác đúc", code="option1", is_custom=False)
+            option1 = QuizOption(title="Kiểm tra thao tác đúc", code="option1", is_custom=False, quiz_format="option1")
             db.session.add(option1)
             db.session.commit()
 
@@ -133,7 +141,7 @@ def _seed_quiz_options():
                 "Dùng lòng bàn tay phải ấn hết cỡ đến khi có tiếng kêu cạch",
                 "Cầm chắc chắn, xoay jig 180̊ để hướng nhãn màu cam về phía gần người thao tác",
                 "1.Chỉ tay xác nhận theo chiều kim đồng hồ, mắt nhìn theo tay.\n2. Bắt đầu từ vị trí bush  bên trái gần  NTT nhất \n",
-                "1.Tay phải bóp vào vị trí của Slide\n trên conector.\n2.Các chân terminal nằm trên 1 mặt phẳng, khớp với chân pin  trên khuôn.",
+                "1.Tay phải bóp vào vị trí của Slide\n trên conector.\n2.Các chân terminal nằm trên 1 mặt phẳng, khớp with chân pin  trên khuôn.",
                 "1.Tay trái bóp vào vị trí của Slide\n trên conector\n2.Các chân terminal nằm trên 2 mặt phẳng, khớp với chân pin\n trên khuôn.",
                 "Dùng các ngón tay ấn (không miết) các chân terminal khớp với chân pin.",
                 "1. Vừa xoay người vừa gạt công tắc.\n2. Người không đứng trong khu vực cảm biến"
@@ -180,6 +188,228 @@ def _seed_quiz_options():
             print("Seeded Option 1 successfully.")
     except Exception as e:
         db.session.rollback()
-        print(f"Option seed warning: {e}")
+        print(f"Option 1 seed warning: {e}")
+
+    # 2. OPTION 3
+    try:
+        option3 = QuizOption.query.filter_by(code="option3").first()
+        if not option3:
+            option3 = QuizOption(title="Hành động xử lý bất thường", code="option3", is_custom=False, quiz_format="option3")
+            db.session.add(option3)
+            db.session.commit()
+
+            device_texts = [
+                "Công nhân phát hiện ra bất thường",
+                "Nhận liên lạc về bất thường từ công nhân",
+                "Xác nhận bất thường bằng hiện vật - hiện trường",
+                "Dừng chuyền",
+                "Yêu cầu bảo dưỡng đến sửa chữa",
+                "Xác nhận ảnh hưởng đến công đoạn sau",
+                "Liên lạc với cấp trên, nhận chỉ thị",
+                "Liên lạc ảnh hưởng đến công đoạn sau",
+                "Triển khai nội dung sự cố đến công nhân",
+                "Xác nhận sau khi sửa chữa",
+                "Triển khai kết quả sửa chữa đến công nhân",
+                "Báo cáo kết quả xử lý đến cấp trên",
+                "Chỉ thị tái sản xuất đến công nhân",
+                "Liên lạc tái sản xuất đến công đoạn sau",
+                "Triển khai nội dung sự cố đến bộ phận khác",
+                "Thực hiện ngăn ngừa tái phát"
+            ]
+
+            quality_texts = [
+                "Phát hiện bất thường",
+                "Dừng - Gọi - Đợi",
+                "Xác nhận bất thường bằng hiện vật hiện trường",
+                "Liên lạc đến cấp trên",
+                "Xác nhận tồn kho trong công đoạn",
+                "Yêu cầu tạm dừng xuất hàng",
+                "Chỉ thị kiểm tra phân loại sản phẩm OK, NG",
+                "Chỉ thị kiểm tra phân loại đến công đoạn sau (Phán đoán dừng xuất hàng)",
+                "Phân tích nguyên nhân",
+                "Xác định nguyên nhân chính",
+                "Yêu cầu hợp tác đến các bộ phận liên quan",
+                "Lập đối sách",
+                "Xử lý bất thường",
+                "Báo cáo kết quả xử lý lên cấp trên",
+                "Liên lạc kết quả xử lý đến công nhân",
+                "Tái sản xuất",
+                "Xác nhận chất lượng của 1 sản phẩm đầu",
+                "Báo cáo đến công đoạn sau\nLàm bù phần bị chậm",
+                "Thực hiện biện pháp ngăn ngừa tái phát",
+                "Triển khai ngang"
+            ]
+
+            # Step 1..16: device
+            for idx, text in enumerate(device_texts):
+                step = QuizStep(
+                    option_id=option3.id,
+                    step_num=idx + 1,
+                    image_url="",
+                    left_text=text,
+                    right_text="device",
+                    note_text="",
+                    reason_text=""
+                )
+                db.session.add(step)
+            # Step 17..36: quality
+            for idx, text in enumerate(quality_texts):
+                step = QuizStep(
+                    option_id=option3.id,
+                    step_num=idx + 17,
+                    image_url="",
+                    left_text=text,
+                    right_text="quality",
+                    note_text="",
+                    reason_text=""
+                )
+                db.session.add(step)
+            db.session.commit()
+            print("Seeded Option 3 successfully.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Option 3 seed warning: {e}")
+
+    # 3. OPTION 4
+    try:
+        option4 = QuizOption.query.filter_by(code="option4").first()
+        if not option4:
+            option4 = QuizOption(title="Kiểm tra chất lượng", code="option4", is_custom=False, quiz_format="option4")
+            db.session.add(option4)
+            db.session.commit()
+
+            # Topic 1: 1..4
+            t1_quants = ["2", "3", "2", "3"]
+            for idx, q in enumerate(t1_quants):
+                step = QuizStep(
+                    option_id=option4.id,
+                    step_num=idx + 1,
+                    image_url="",
+                    left_text=q,
+                    right_text="",
+                    note_text="",
+                    reason_text=""
+                )
+                db.session.add(step)
+
+            # Topic 2: 5..8
+            t2_quants = ["3", "2", "3", "2"]
+            for idx, q in enumerate(t2_quants):
+                step = QuizStep(
+                    option_id=option4.id,
+                    step_num=idx + 5,
+                    image_url="",
+                    left_text=q,
+                    right_text="",
+                    note_text="",
+                    reason_text=""
+                )
+                db.session.add(step)
+
+            # Topic 3: 9..12 (Location, Status, Quantity)
+            t3_data = [
+                ("A", "D", "2"),
+                ("B", "G", "2"),
+                ("C", "E", "2"),
+                ("D", "F", "1")
+            ]
+            for idx, (loc, stat, q) in enumerate(t3_data):
+                step = QuizStep(
+                    option_id=option4.id,
+                    step_num=idx + 9,
+                    image_url="",
+                    left_text=loc,
+                    right_text=stat,
+                    note_text=q,
+                    reason_text=""
+                )
+                db.session.add(step)
+
+            # Topic 4: 13..16 (Location, Status, Quantity)
+            t4_data = [
+                ("2 tấm cánh", "Thiếu", "2"),
+                ("Móng", "Bị đứt", "2"),
+                ("Nắp", "Bị nứt", "1"),
+                ("Móng", "Bị thiếu", "2")
+            ]
+            for idx, (loc, stat, q) in enumerate(t4_data):
+                step = QuizStep(
+                    option_id=option4.id,
+                    step_num=idx + 13,
+                    image_url="",
+                    left_text=loc,
+                    right_text=stat,
+                    note_text=q,
+                    reason_text=""
+                )
+                db.session.add(step)
+
+            # Topic 5: 17..20 (Location, Status)
+            t5_data = [
+                ("C", "F"),
+                ("G", "C"),
+                ("A", "B"),
+                ("D", "E")
+            ]
+            for idx, (loc, stat) in enumerate(t5_data):
+                step = QuizStep(
+                    option_id=option4.id,
+                    step_num=idx + 17,
+                    image_url="",
+                    left_text=loc,
+                    right_text=stat,
+                    note_text="",
+                    reason_text=""
+                )
+                db.session.add(step)
+
+            # Topic 6: 21..24 (Location, Status)
+            t6_data = [
+                ("N", "sai số"),
+                ("M", "không có,ngắn"),
+                ("C", "cong"),
+                ("B", "không có, thiếu")
+            ]
+            for idx, (loc, stat) in enumerate(t6_data):
+                step = QuizStep(
+                    option_id=option4.id,
+                    step_num=idx + 21,
+                    image_url="",
+                    left_text=loc,
+                    right_text=stat,
+                    note_text="",
+                    reason_text=""
+                )
+                db.session.add(step)
+
+            # Topic 7: 25 (Image, Quantity)
+            step_t7 = QuizStep(
+                option_id=option4.id,
+                step_num=25,
+                image_url="/static/imgoptions4/hinh1.png",
+                left_text="11",
+                right_text="",
+                note_text="",
+                reason_text=""
+            )
+            db.session.add(step_t7)
+
+            # Topic 8: 26 (Image, Quantity)
+            step_t8 = QuizStep(
+                option_id=option4.id,
+                step_num=26,
+                image_url="/static/imgoptions4/hinh2.png",
+                left_text="11",
+                right_text="",
+                note_text="",
+                reason_text=""
+            )
+            db.session.add(step_t8)
+
+            db.session.commit()
+            print("Seeded Option 4 successfully.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Option 4 seed warning: {e}")
 
 

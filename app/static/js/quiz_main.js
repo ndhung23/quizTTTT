@@ -69,6 +69,7 @@ async function loadQuizDefinitionAndStart() {
     const data = await res.json();
     activeQuizSteps = data.steps || [];
     activeQuizTitle = data.title || 'Kiểm tra';
+    const qFormat = data.quiz_format || 'option1';
     
     const titleHeader = document.getElementById('quizTitleHeader');
     if (titleHeader) titleHeader.textContent = activeQuizTitle;
@@ -76,9 +77,24 @@ async function loadQuizDefinitionAndStart() {
     restoreWipProgress();
 
     document.getElementById('screenJoin').classList.add('hidden');
-    document.getElementById('screenOption1').classList.remove('hidden');
-    document.getElementById('studentNameO1').textContent = studentName;
-    initOption1();
+    document.getElementById('screenOption1').classList.add('hidden');
+    document.getElementById('screenOption2').classList.add('hidden');
+    document.getElementById('screenOption3').classList.add('hidden');
+    document.getElementById('screenOption4').classList.add('hidden');
+
+    if (qFormat === 'option3') {
+      document.getElementById('screenOption3').classList.remove('hidden');
+      document.getElementById('studentNameO3').textContent = studentName;
+      initOption3();
+    } else if (qFormat === 'option4') {
+      document.getElementById('screenOption4').classList.remove('hidden');
+      document.getElementById('studentNameO4').textContent = studentName;
+      initOption4();
+    } else {
+      document.getElementById('screenOption1').classList.remove('hidden');
+      document.getElementById('studentNameO1').textContent = studentName;
+      initOption1();
+    }
   } catch (err) {
     alert('Lỗi kết nối khi tải đề thi: ' + err.message);
   }
@@ -124,25 +140,47 @@ async function retakeQuiz() {
     localStorage.removeItem('gridPlacement_' + studentId);
     localStorage.removeItem('completedSubQuizzes_' + studentId);
     localStorage.removeItem('subQuizScores_' + studentId);
+    localStorage.removeItem('o3Answers_' + studentId);
+    localStorage.removeItem('o4Answers_' + studentId);
 
-    // Reset local state
+    document.getElementById('screenResult').classList.add('hidden');
+
+    // Reset local state & screens
     if (quizType !== 'option2') {
-      gridPlacement = Array.from({length: activeQuizSteps.length}, () => ({
-        image_id: null,
-        left_id: null,
-        right_id: null,
-        note_id: null,
-        reason_id: null
-      }));
-      currentPart = 1;
-      initOption1();
-      document.getElementById('screenResult').classList.add('hidden');
-      document.getElementById('screenOption1').classList.remove('hidden');
+      const defRes = await fetch('/quiz/definition/' + quizType);
+      if (defRes.ok) {
+        const defData = await defRes.json();
+        activeQuizSteps = defData.steps || [];
+        activeQuizTitle = defData.title || 'Kiểm tra';
+        const qFormat = defData.quiz_format || 'option1';
+
+        document.getElementById('screenOption1').classList.add('hidden');
+        document.getElementById('screenOption3').classList.add('hidden');
+        document.getElementById('screenOption4').classList.add('hidden');
+
+        if (qFormat === 'option3') {
+          document.getElementById('screenOption3').classList.remove('hidden');
+          initOption3();
+        } else if (qFormat === 'option4') {
+          document.getElementById('screenOption4').classList.remove('hidden');
+          initOption4();
+        } else {
+          gridPlacement = Array.from({length: activeQuizSteps.length}, () => ({
+            image_id: null,
+            left_id: null,
+            right_id: null,
+            note_id: null,
+            reason_id: null
+          }));
+          currentPart = 1;
+          document.getElementById('screenOption1').classList.remove('hidden');
+          initOption1();
+        }
+      }
     } else {
       completedSubQuizzes = [];
       subQuizScores = {};
       updateOption2Dashboard();
-      document.getElementById('screenResult').classList.add('hidden');
       document.getElementById('screenOption2').classList.remove('hidden');
     }
 
@@ -189,10 +227,18 @@ window.addEventListener('DOMContentLoaded', () => {
                     activeQuizTitle = defData.title || 'Kiểm tra';
                     const titleHeader = document.getElementById('quizTitleHeader');
                     if (titleHeader) titleHeader.textContent = activeQuizTitle;
+
+                    const qFormat = defData.quiz_format || 'option1';
+                    if (qFormat === 'option3') {
+                      showO3Results(resultsObj);
+                    } else if (qFormat === 'option4') {
+                      showO4Results(resultsObj);
+                    } else {
+                      const savedPlacement = localStorage.getItem('gridPlacement_' + studentId);
+                      if (savedPlacement) gridPlacement = JSON.parse(savedPlacement);
+                      showO1Results(resultsObj);
+                    }
                   }
-                  const savedPlacement = localStorage.getItem('gridPlacement_' + studentId);
-                  if (savedPlacement) gridPlacement = JSON.parse(savedPlacement);
-                  showO1Results(resultsObj);
                 } else {
                   const savedScores = localStorage.getItem('subQuizScores_' + studentId);
                   if (savedScores) subQuizScores = JSON.parse(savedScores);
@@ -202,17 +248,6 @@ window.addEventListener('DOMContentLoaded', () => {
               } catch (e) {
                 // ignore
               }
-            }
-          }
-          
-          if (quizType !== 'option2') {
-            const defRes = await fetch('/quiz/definition/' + quizType);
-            if (defRes.ok) {
-              const defData = await defRes.json();
-              activeQuizSteps = defData.steps || [];
-              activeQuizTitle = defData.title || 'Kiểm tra';
-              const titleHeader = document.getElementById('quizTitleHeader');
-              if (titleHeader) titleHeader.textContent = activeQuizTitle;
             }
           }
           
