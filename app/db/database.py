@@ -31,6 +31,34 @@ def init_db(app):
         _seed_users()
         _seed_quiz_options()
 
+        # NFC normalization for legacy database records
+        try:
+            import unicodedata
+            from app.models.quiz_option import QuizOption
+            from app.models.session import QuizSession
+            
+            # Normalize QuizOption codes
+            options = QuizOption.query.all()
+            for opt in options:
+                if opt.code:
+                    norm = unicodedata.normalize('NFC', opt.code)
+                    if norm != opt.code:
+                        opt.code = norm
+            
+            # Normalize QuizSession quiz_types
+            sessions = QuizSession.query.all()
+            for sess in sessions:
+                if sess.quiz_type:
+                    norm = unicodedata.normalize('NFC', sess.quiz_type)
+                    if norm != sess.quiz_type:
+                        sess.quiz_type = norm
+                        
+            db.session.commit()
+            print("Successfully normalized existing DB tables to NFC")
+        except Exception as e:
+            db.session.rollback()
+            print(f"NFC Normalization warning: {e}")
+
 
 def _seed_users():
     """Insert default users or update passwords."""

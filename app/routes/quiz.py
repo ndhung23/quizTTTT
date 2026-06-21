@@ -31,6 +31,9 @@ def gen_code(length: int = 6) -> str:
 def start_quiz():
     data = request.get_json(force=True, silent=True) or {}
     quiz_type = data.get("quiz_type", "option1")
+    if quiz_type:
+        import unicodedata
+        quiz_type = unicodedata.normalize('NFC', str(quiz_type))
 
     from app.models.quiz_option import QuizOption
     # Allow option2 (hardcoded) or any custom/seeded option registered in the DB
@@ -103,7 +106,9 @@ def submit_quiz():
     from app.models.quiz_option import QuizOption
     from app.models.quiz_step import QuizStep
 
-    option = QuizOption.query.filter_by(code=session.quiz_type).first()
+    import unicodedata
+    q_type_norm = unicodedata.normalize('NFC', session.quiz_type) if session.quiz_type else ""
+    option = QuizOption.query.filter_by(code=q_type_norm).first()
 
     def safe_int(val):
         try:
@@ -380,7 +385,9 @@ def submit_quiz():
         })
     else:
         # Fetch option
-        option = QuizOption.query.filter_by(code=session.quiz_type).first()
+        import unicodedata
+        q_type_norm = unicodedata.normalize('NFC', session.quiz_type) if session.quiz_type else ""
+        option = QuizOption.query.filter_by(code=q_type_norm).first()
         if not option:
             abort(404, description="Không tìm thấy cấu hình đề thi")
 
@@ -457,7 +464,9 @@ def get_results():
 
     from app.models.quiz_option import QuizOption
     from app.models.quiz_step import QuizStep
-    option = QuizOption.query.filter_by(code=session.quiz_type).first()
+    import unicodedata
+    q_type_norm = unicodedata.normalize('NFC', session.quiz_type) if session.quiz_type else ""
+    option = QuizOption.query.filter_by(code=q_type_norm).first()
 
     def safe_int(val):
         try:
@@ -603,7 +612,9 @@ def get_definition(quiz_type):
     from app.models.quiz_option import QuizOption
     from app.models.quiz_step import QuizStep
 
-    option = QuizOption.query.filter_by(code=quiz_type).first()
+    import unicodedata
+    q_type_norm = unicodedata.normalize('NFC', quiz_type) if quiz_type else ""
+    option = QuizOption.query.filter_by(code=q_type_norm).first()
     if not option:
         abort(404, description="Đề thi không tồn tại hoặc chưa được định nghĩa")
 
@@ -661,6 +672,9 @@ def create_option():
     data = request.get_json(force=True)
     title = (data.get("title") or "").strip()
     code = (data.get("code") or "").strip().lower()
+    if code:
+        import unicodedata
+        code = unicodedata.normalize('NFC', code)
     quiz_format = (data.get("quiz_format") or "option1").strip()
 
     if not title or not code:
@@ -718,6 +732,9 @@ def update_option(option_id):
     data = request.get_json(force=True)
     title = (data.get("title") or "").strip()
     code = (data.get("code") or "").strip().lower()
+    if code:
+        import unicodedata
+        code = unicodedata.normalize('NFC', code)
     quiz_format = (data.get("quiz_format") or option.quiz_format).strip()
 
     if not title or not code:
