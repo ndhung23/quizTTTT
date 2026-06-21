@@ -49,19 +49,23 @@ def init_db(app):
             sessions = QuizSession.query.all()
             for sess in sessions:
                 if sess.quiz_type:
+                    # Repair corrupted 'c' or '\ufffdc' back to 'đúc'
+                    if '\ufffd' in sess.quiz_type or '\xc4' in sess.quiz_type or sess.quiz_type.endswith('c') and len(sess.quiz_type) <= 3:
+                        if sess.quiz_type.endswith('c'):
+                            sess.quiz_type = 'đúc'
                     norm = unicodedata.normalize('NFC', sess.quiz_type)
                     if norm != sess.quiz_type:
                         sess.quiz_type = norm
                         
             db.session.commit()
-            print("Successfully normalized existing DB tables to NFC")
+            print("Successfully normalized existing DB tables to NFC and repaired legacy session records")
         except Exception as e:
             db.session.rollback()
             print(f"NFC Normalization warning: {e}")
 
 
 def _seed_users():
-    """Insert default users or update passwords."""
+    """Insert default users if they do not exist (do not overwrite existing passwords/roles)."""
     from app.models.user import User
     try:
         users_to_check = [
@@ -69,16 +73,18 @@ def _seed_users():
             {"username": "hv90122", "password": "hdvn@dens0", "role": "teacher"},
             {"username": "hv10921", "password": "hdvn@dens0", "role": "teacher"},
         ]
+        seeded_any = False
         for u_data in users_to_check:
             user = User.query.filter_by(username=u_data["username"]).first()
             if not user:
                 user = User(username=u_data["username"], password=u_data["password"], role=u_data["role"])
                 db.session.add(user)
-            else:
-                user.password = u_data["password"]
-                user.role = u_data["role"]
-        db.session.commit()
-        print("Synchronized default users and updated passwords to 'hdvn@dens0'")
+                seeded_any = True
+        if seeded_any:
+            db.session.commit()
+            print("Seeded missing default users.")
+        else:
+            print("Default users already exist, skipping credentials override.")
     except Exception as e:
         db.session.rollback()
         print(f"Seed/update warning: {e}")
