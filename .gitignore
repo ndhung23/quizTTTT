@@ -4,6 +4,7 @@ __pycache__/
 *.db
 .env
 *.sqlite3
+*.env
 <<<<<<< HEAD
 .Đúc 5230-5260 mới nhất.xls
 =======
