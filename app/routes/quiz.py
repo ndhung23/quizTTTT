@@ -556,6 +556,467 @@ def get_results():
     })
 
 
+# ─── GET /quiz/student-detail/<int:student_id> ─────────────────────
+@quiz_bp.get("/student-detail/<int:student_id>")
+def get_student_detail(student_id):
+    student = Student.query.filter_by(id=student_id).first()
+    if not student:
+        abort(404, description="Không tìm thấy học viên")
+    
+    session = QuizSession.query.filter_by(id=student.session_id).first()
+    if not session:
+        abort(404, description="Không tìm thấy phòng thi")
+
+    from app.models.quiz_option import QuizOption
+    from app.models.quiz_step import QuizStep
+    import unicodedata
+    q_type_norm = unicodedata.normalize('NFC', session.quiz_type) if session.quiz_type else ""
+    option = QuizOption.query.filter_by(code=q_type_norm).first()
+    if not option:
+        abort(404, description="Không tìm thấy cấu hình đề thi")
+
+    steps = QuizStep.query.filter_by(option_id=option.id).order_by(QuizStep.step_num).all()
+    steps_dict = {s.step_num: s for s in steps}
+
+    def safe_int(val):
+        try:
+            return int(float(str(val).strip()))
+        except Exception:
+            return 0
+
+    def safe_float(val, default=1.0):
+        try:
+            return float(str(val).strip())
+        except Exception:
+            return default
+
+    # Prepare detail report
+    if option.quiz_format == "option3":
+        device_answers = student.answer_order.get("device_answers", []) if isinstance(student.answer_order, dict) else []
+        quality_answers = student.answer_order.get("quality_answers", []) if isinstance(student.answer_order, dict) else []
+        
+        device_steps = [s for s in steps if s.step_num <= 16]
+        quality_steps = [s for s in steps if s.step_num > 16]
+        
+        device_report = []
+        for i in range(16):
+            correct_text = device_steps[i].left_text if i < len(device_steps) and device_steps[i].left_text else ""
+            note_text = device_steps[i].note_text if i < len(device_steps) and device_steps[i].note_text else f"Bước {i+1}"
+            user_text = device_answers[i] if i < len(device_answers) else ""
+            
+            if i < 2:
+                is_correct = True
+            else:
+                is_correct = (str(user_text).strip().lower() == correct_text.strip().lower() and bool(correct_text))
+                
+            device_report.append({
+                "step_num": i + 1,
+                "note_text": note_text,
+                "correct_val": correct_text,
+                "student_val": user_text,
+                "is_correct": is_correct
+            })
+            
+        quality_report = []
+        for j in range(20):
+            correct_text = quality_steps[j].left_text if j < len(quality_steps) and quality_steps[j].left_text else ""
+            note_text = quality_steps[j].note_text if j < len(quality_steps) and quality_steps[j].note_text else f"Bước {j+1}"
+            user_text = quality_answers[j] if j < len(quality_answers) else ""
+            
+            if j < 2:
+                is_correct = True
+            else:
+                is_correct = (str(user_text).strip().lower() == correct_text.strip().lower() and bool(correct_text))
+                
+            quality_report.append({
+                "step_num": j + 17,
+                "note_text": note_text,
+                "correct_val": correct_text,
+                "student_val": user_text,
+                "is_correct": is_correct
+            })
+            
+        return jsonify({
+            "quiz_format": "option3",
+            "quiz_title": option.title,
+            "student_name": student.name,
+            "score": student.score,
+            "device_report": device_report,
+            "quality_report": quality_report
+        })
+        
+    elif option.quiz_format == "option4":
+        odd_answers = student.answer_order.get("odd_answers", {}) if isinstance(student.answer_order, dict) else {}
+        even_answers = student.answer_order.get("even_answers", {}) if isinstance(student.answer_order, dict) else {}
+        
+        if len(steps) < 26:
+            return jsonify({"error": "Dữ liệu cấu hình đề thi chưa đủ 26 bước"}), 500
+            
+        odd_report = []
+        even_report = []
+        import os
+        
+        # Topic 1: steps 1..4 (steps[0..3])
+        t1_ans = odd_answers.get("t1", [])
+        for i in range(4):
+            correct_q = safe_int(steps[i].left_text)
+            weight = safe_int(steps[i].reason_text) if steps[i].reason_text else 2
+            entered_q = safe_int(t1_ans[i]) if i < len(t1_ans) else 0
+            pen_def = safe_float(steps[i].right_text, 1.0)
+            pen_exc = safe_float(steps[i].note_text, 1.0)
+            if entered_q < correct_q:
+                row_score = max(0.0, float(correct_q) - float(correct_q - entered_q) * pen_def)
+            elif entered_q > correct_q:
+                row_score = max(0.0, float(correct_q) - float(entered_q - correct_q) * pen_exc)
+            else:
+                row_score = float(correct_q)
+            earned = row_score * weight
+            max_score = correct_q * weight
+            odd_report.append({
+                "topic": "Đề tài 1",
+                "step_num": i + 1,
+                "correct_val": f"Số lượng: {correct_q}",
+                "student_val": f"Số lượng: {entered_q}",
+                "is_correct": entered_q == correct_q,
+                "earned": earned,
+                "max_score": max_score
+            })
+            
+        # Topic 3: steps 9..12 (steps[8..11])
+        t3_ans = odd_answers.get("t3", [])
+        for i in range(4):
+            step = steps[8 + i]
+            correct_loc = step.left_text.strip().lower() if step.left_text else ""
+            correct_stat = step.right_text.strip().lower() if step.right_text else ""
+            correct_q = safe_int(step.note_text)
+            weight = safe_int(step.reason_text) if step.reason_text else 1
+            
+            user_ans = t3_ans[i] if i < len(t3_ans) else {}
+            user_loc = str(user_ans.get("loc", "")).strip().lower()
+            user_stat = str(user_ans.get("stat", "")).strip().lower()
+            user_q = safe_int(user_ans.get("quant", 0))
+            
+            loc_stat_ok = (user_loc == correct_loc and user_stat == correct_stat)
+            if loc_stat_ok:
+                if user_q <= correct_q:
+                    row_score = user_q
+                else:
+                    row_score = max(0, 2 * correct_q - user_q)
+            else:
+                row_score = 0
+            
+            earned = row_score * weight
+            max_score = correct_q * weight
+            odd_report.append({
+                "topic": "Đề tài 3",
+                "step_num": i + 9,
+                "correct_val": f"Vị trí: {step.left_text or ''}, Trạng thái: {step.right_text or ''}, SL: {correct_q}",
+                "student_val": f"Vị trí: {user_ans.get('loc', '')}, Trạng thái: {user_ans.get('stat', '')}, SL: {user_q}",
+                "is_correct": loc_stat_ok and user_q == correct_q,
+                "earned": earned,
+                "max_score": max_score
+            })
+            
+        # Topic 5: steps 17..20 (steps[16..19])
+        t5_ans = odd_answers.get("t5", [])
+        for i in range(4):
+            step = steps[16 + i]
+            correct_loc = step.left_text.strip().lower() if step.left_text else ""
+            correct_stat = step.right_text.strip().lower() if step.right_text else ""
+            weight = safe_int(step.reason_text) if step.reason_text else 1
+            
+            user_ans = t5_ans[i] if i < len(t5_ans) else {}
+            user_loc = str(user_ans.get("loc", "")).strip().lower()
+            user_stat = str(user_ans.get("stat", "")).strip().lower()
+            
+            is_correct = (user_loc == correct_loc and user_stat == correct_stat)
+            earned = weight if is_correct else 0
+            
+            odd_report.append({
+                "topic": "Đề tài 5",
+                "step_num": i + 17,
+                "correct_val": f"Vị trí: {step.left_text or ''}, Trạng thái: {step.right_text or ''}",
+                "student_val": f"Vị trí: {user_ans.get('loc', '')}, Trạng thái: {user_ans.get('stat', '')}",
+                "is_correct": is_correct,
+                "earned": earned,
+                "max_score": weight
+            })
+            
+        # Topic 7: step 25 (steps[24])
+        t7_ans = odd_answers.get("t7", {})
+        step = steps[24]
+        correct_img = os.path.basename(step.image_url.strip().replace("\\", "/")) if step.image_url else ""
+        correct_q = safe_int(step.left_text)
+        weight = safe_int(step.reason_text) if step.reason_text else 1
+        
+        user_img = os.path.basename(str(t7_ans.get("image_url", "")).strip().replace("\\", "/"))
+        user_q = safe_int(t7_ans.get("quant", 0))
+        
+        img_ok = (user_img == correct_img and bool(correct_img))
+        if img_ok:
+            if user_q <= correct_q:
+                row_score = user_q
+            else:
+                row_score = max(0, 2 * correct_q - user_q)
+        else:
+            row_score = 0
+            
+        earned = row_score * weight
+        max_score = correct_q * weight
+        odd_report.append({
+            "topic": "Đề tài 7",
+            "step_num": 25,
+            "correct_val": f"Hình ảnh: {correct_img}, SL: {correct_q}",
+            "student_val": f"Hình ảnh: {user_img}, SL: {user_q}",
+            "is_correct": img_ok and user_q == correct_q,
+            "earned": earned,
+            "max_score": max_score
+        })
+        
+        # Topic 2: steps 5..8 (steps[4..7])
+        t2_ans = even_answers.get("t2", [])
+        for i in range(4):
+            correct_q = safe_int(steps[4 + i].left_text)
+            weight = safe_int(steps[4 + i].reason_text) if steps[4 + i].reason_text else 2
+            entered_q = safe_int(t2_ans[i]) if i < len(t2_ans) else 0
+            pen_def = safe_float(steps[4 + i].right_text, 1.0)
+            pen_exc = safe_float(steps[4 + i].note_text, 1.0)
+            if entered_q < correct_q:
+                row_score = max(0.0, float(correct_q) - float(correct_q - entered_q) * pen_def)
+            elif entered_q > correct_q:
+                row_score = max(0.0, float(correct_q) - float(entered_q - correct_q) * pen_exc)
+            else:
+                row_score = float(correct_q)
+            earned = row_score * weight
+            max_score = correct_q * weight
+            even_report.append({
+                "topic": "Đề tài 2",
+                "step_num": i + 5,
+                "correct_val": f"Số lượng: {correct_q}",
+                "student_val": f"Số lượng: {entered_q}",
+                "is_correct": entered_q == correct_q,
+                "earned": earned,
+                "max_score": max_score
+            })
+            
+        # Topic 4: steps 13..16 (steps[12..15])
+        t4_ans = even_answers.get("t4", [])
+        for i in range(4):
+            step = steps[12 + i]
+            correct_loc = step.left_text.strip().lower() if step.left_text else ""
+            correct_stat = step.right_text.strip().lower() if step.right_text else ""
+            correct_q = safe_int(step.note_text)
+            weight = safe_int(step.reason_text) if step.reason_text else 1
+            
+            user_ans = t4_ans[i] if i < len(t4_ans) else {}
+            user_loc = str(user_ans.get("loc", "")).strip().lower()
+            user_stat = str(user_ans.get("stat", "")).strip().lower()
+            user_q = safe_int(user_ans.get("quant", 0))
+            
+            loc_stat_ok = (user_loc == correct_loc and user_stat == correct_stat)
+            if loc_stat_ok:
+                if user_q <= correct_q:
+                    row_score = user_q
+                else:
+                    row_score = max(0, 2 * correct_q - user_q)
+            else:
+                row_score = 0
+            
+            earned = row_score * weight
+            max_score = correct_q * weight
+            even_report.append({
+                "topic": "Đề tài 4",
+                "step_num": i + 13,
+                "correct_val": f"Vị trí: {step.left_text or ''}, Trạng thái: {step.right_text or ''}, SL: {correct_q}",
+                "student_val": f"Vị trí: {user_ans.get('loc', '')}, Trạng thái: {user_ans.get('stat', '')}, SL: {user_q}",
+                "is_correct": loc_stat_ok and user_q == correct_q,
+                "earned": earned,
+                "max_score": max_score
+            })
+            
+        # Topic 6: steps 21..24 (steps[20..23])
+        t6_ans = even_answers.get("t6", [])
+        for i in range(4):
+            step = steps[20 + i]
+            correct_loc = step.left_text.strip().lower() if step.left_text else ""
+            correct_stat = step.right_text.strip().lower() if step.right_text else ""
+            weight = safe_int(step.reason_text) if step.reason_text else 1
+            
+            user_ans = t6_ans[i] if i < len(t6_ans) else {}
+            user_loc = str(user_ans.get("loc", "")).strip().lower()
+            user_stat = str(user_ans.get("stat", "")).strip().lower()
+            
+            is_correct = (user_loc == correct_loc and user_stat == correct_stat)
+            earned = weight if is_correct else 0
+            
+            even_report.append({
+                "topic": "Đề tài 6",
+                "step_num": i + 21,
+                "correct_val": f"Vị trí: {step.left_text or ''}, Trạng thái: {step.right_text or ''}",
+                "student_val": f"Vị trí: {user_ans.get('loc', '')}, Trạng thái: {user_ans.get('stat', '')}",
+                "is_correct": is_correct,
+                "earned": earned,
+                "max_score": weight
+            })
+            
+        # Topic 8: step 26 (steps[25])
+        t8_ans = even_answers.get("t8", {})
+        step = steps[25]
+        correct_img = os.path.basename(step.image_url.strip().replace("\\", "/")) if step.image_url else ""
+        correct_q = safe_int(step.left_text)
+        weight = safe_int(step.reason_text) if step.reason_text else 1
+        
+        user_img = os.path.basename(str(t8_ans.get("image_url", "")).strip().replace("\\", "/"))
+        user_q = safe_int(t8_ans.get("quant", 0))
+        
+        img_ok = (user_img == correct_img and bool(correct_img))
+        if img_ok:
+            if user_q <= correct_q:
+                row_score = user_q
+            else:
+                row_score = max(0, 2 * correct_q - user_q)
+        else:
+            row_score = 0
+            
+        earned = row_score * weight
+        max_score = correct_q * weight
+        even_report.append({
+            "topic": "Đề tài 8",
+            "step_num": 26,
+            "correct_val": f"Hình ảnh: {correct_img}, SL: {correct_q}",
+            "student_val": f"Hình ảnh: {user_img}, SL: {user_q}",
+            "is_correct": img_ok and user_q == correct_q,
+            "earned": earned,
+            "max_score": max_score
+        })
+        
+        return jsonify({
+            "quiz_format": "option4",
+            "quiz_title": option.title,
+            "student_name": student.name,
+            "score": student.score,
+            "odd_report": odd_report,
+            "even_report": even_report
+        })
+        
+    elif session.quiz_type == "option2":
+        scores = student.answer_order.get("scores", {}) if isinstance(student.answer_order, dict) else {}
+        sub_quiz_max = {
+            "1": 5, "2": 7, "3": 5, "4": 5, "5": 2, "6": 4, "7": 4, "8": 5, "9": 10
+        }
+        report = []
+        for k in sorted(sub_quiz_max.keys(), key=int):
+            earned = scores.get(k, 0)
+            max_val = sub_quiz_max[k]
+            report.append({
+                "sub_quiz": f"Bài {k}",
+                "earned": earned,
+                "max": max_val,
+                "is_dat": earned > 0 and earned == max_val
+            })
+        return jsonify({
+            "quiz_format": "option2",
+            "quiz_title": "Kiểm tra TIE",
+            "student_name": student.name,
+            "score": student.score,
+            "report": report
+        })
+        
+    else: # option1 or custom format
+        answer_order = student.answer_order if isinstance(student.answer_order, list) else []
+        report = []
+        for s in steps:
+            step_num = s.step_num
+            user_row = None
+            for row in answer_order:
+                if row.get("row_idx") == step_num - 1:
+                    user_row = row
+                    break
+            
+            correct_img_url = s.image_url or ""
+            correct_left = s.left_text or ""
+            correct_right = s.right_text or ""
+            correct_note = s.note_text or ""
+            correct_reason = s.reason_text or ""
+            
+            if user_row:
+                img_id = user_row.get("image_id")
+                left_id = user_row.get("left_id")
+                right_id = user_row.get("right_id")
+                note_id = user_row.get("note_id")
+                reason_id = user_row.get("reason_id")
+                
+                img_ok = False
+                placed_img_url = ""
+                if img_id and img_id in steps_dict:
+                    placed_img_url = steps_dict[img_id].image_url or ""
+                    if not correct_img_url.strip():
+                        img_ok = not placed_img_url.strip()
+                    else:
+                        img_ok = (placed_img_url == correct_img_url)
+                        
+                left_ok = False
+                placed_left = ""
+                if left_id and left_id in steps_dict:
+                    placed_left = steps_dict[left_id].left_text or ""
+                    left_ok = (placed_left == correct_left)
+                    
+                right_ok = False
+                placed_right = ""
+                if right_id and right_id in steps_dict:
+                    placed_right = steps_dict[right_id].right_text or ""
+                    right_ok = (placed_right == correct_right)
+                    
+                note_ok = False
+                placed_note = ""
+                if note_id and note_id in steps_dict:
+                    placed_note = steps_dict[note_id].note_text or ""
+                    note_ok = (placed_note == correct_note)
+                    
+                reason_ok = False
+                placed_reason = ""
+                if reason_id and reason_id in steps_dict:
+                    placed_reason = steps_dict[reason_id].reason_text or ""
+                    reason_ok = (placed_reason == correct_reason)
+            else:
+                img_ok = left_ok = right_ok = note_ok = reason_ok = False
+                placed_img_url = placed_left = placed_right = placed_note = placed_reason = ""
+                
+            report.append({
+                "step_num": step_num,
+                "correct": {
+                    "image_url": correct_img_url,
+                    "left": correct_left,
+                    "right": correct_right,
+                    "note": correct_note,
+                    "reason": correct_reason
+                },
+                "student": {
+                    "image_url": placed_img_url,
+                    "left": placed_left,
+                    "right": placed_right,
+                    "note": placed_note,
+                    "reason": placed_reason
+                },
+                "status": {
+                    "image": img_ok,
+                    "left": left_ok,
+                    "right": right_ok,
+                    "note": note_ok,
+                    "reason": reason_ok,
+                    "row_ok": img_ok and left_ok and right_ok and note_ok and reason_ok
+                }
+            })
+            
+        return jsonify({
+            "quiz_format": option.quiz_format or "option1",
+            "quiz_title": option.title,
+            "student_name": student.name,
+            "score": student.score,
+            "report": report
+        })
+
+
 # ─── GET /quiz/active ────────────────────────────────────────────
 @quiz_bp.get("/active")
 def get_active():

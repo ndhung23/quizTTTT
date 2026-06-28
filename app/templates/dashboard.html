@@ -532,6 +532,29 @@
     </div>
   </div>
 
+  <!-- ==================== STUDENT DETAIL MODAL ==================== -->
+  <div id="studentDetailModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base">Chi tiết bài làm học viên</h3>
+          <p class="text-xs text-slate-500 mt-0.5"><span id="detailStudentName" class="font-bold text-slate-700">--</span> | Tổng điểm: <span id="detailStudentScore" class="font-bold text-blue-600">--</span></p>
+        </div>
+        <button onclick="closeStudentDetailModal()" class="text-slate-400 hover:text-slate-600 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div id="studentDetailContent" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-sm text-slate-700">
+        <!-- Dynamic content will be injected by JavaScript -->
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end flex-shrink-0">
+        <button onclick="closeStudentDetailModal()" class="px-5 py-2.5 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-semibold text-sm shadow-md transition">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
@@ -730,7 +753,8 @@
               <th class="px-4 py-3 text-center">Điểm đạt được</th>
               <th class="px-4 py-3 text-left">Điểm từng bài</th>
               <th class="px-4 py-3 text-center">Trạng thái</th>
-              <th class="px-4 py-3 text-center rounded-r-xl w-32">Kết quả</th>
+              <th class="px-4 py-3 text-center">Kết quả</th>
+              <th class="px-4 py-3 text-center rounded-r-xl w-32">Hành động</th>
             </tr>
           `;
         } else if (data.quiz_format === 'option3' || data.quiz_format === 'option4') {
@@ -740,7 +764,8 @@
               <th class="px-6 py-3.5 text-left">Học viên</th>
               <th class="px-6 py-3.5 text-center">Tổng điểm</th>
               <th class="px-6 py-3.5 text-left">Chi tiết</th>
-              <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Trạng thái</th>
+              <th class="px-6 py-3.5 text-center">Trạng thái</th>
+              <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Hành động</th>
             </tr>
           `;
         } else {
@@ -749,14 +774,15 @@
               <th class="px-6 py-3.5 text-left rounded-l-xl w-16">Hạng</th>
               <th class="px-6 py-3.5 text-left">Học viên</th>
               <th class="px-6 py-3.5 text-center">Điểm</th>
-              <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Trạng thái</th>
+              <th class="px-6 py-3.5 text-center">Trạng thái</th>
+              <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Hành động</th>
             </tr>
           `;
         }
 
         const tbody = document.getElementById('resultsBody');
         if (students.length === 0) {
-          const colSpan = data.quiz_type === 'option2' ? 6 : (data.quiz_format === 'option3' || data.quiz_format === 'option4' ? 5 : 4);
+          const colSpan = data.quiz_type === 'option2' ? 7 : (data.quiz_format === 'option3' || data.quiz_format === 'option4' ? 6 : 5);
           tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-slate-400 py-8">Chưa có học viên nào</td></tr>`;
           return;
         }
@@ -767,6 +793,10 @@
           const statusText = s.submitted
             ? '<span class="bg-emerald-50 border border-emerald-250 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full">✓ Đã nộp bài</span>'
             : '<span class="bg-amber-50 border border-amber-250 text-amber-700 text-xs font-semibold px-2.5 py-1 rounded-full">⏳ Chờ nộp...</span>';
+
+          const actionBtn = s.submitted
+            ? `<button onclick="viewStudentDetail(${s.id}, '${escHtml(s.name)}', ${s.score})" class="text-blue-600 hover:text-blue-800 font-bold px-2 py-1 bg-blue-50 border border-blue-150 rounded hover:bg-blue-100 transition text-xs">Chi tiết</button>`
+            : `<button disabled class="text-slate-400 font-bold px-2 py-1 bg-slate-50 border border-slate-150 rounded text-xs opacity-50 cursor-not-allowed">Chi tiết</button>`;
 
           if (data.quiz_type === 'option2') {
             const scores = (s.answer_order && s.answer_order.scores) ? s.answer_order.scores : {};
@@ -801,16 +831,18 @@
                 <td class="px-4 py-3.5 text-left text-slate-500">${subScoresFormatted}</td>
                 <td class="px-4 py-3.5 text-center">${statusText}</td>
                 <td class="px-4 py-3.5 text-center">${resultBadge}</td>
+                <td class="px-4 py-3.5 text-center">${actionBtn}</td>
               </tr>
             `;
           } else if (data.quiz_format === 'option3' || data.quiz_format === 'option4') {
             return `
-              <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+              <tr class="hover:bg-slate-50 border-b border-slate-100 transition text-xs font-medium text-slate-700">
                 <td class="px-6 py-4 font-bold text-slate-500">${rank}</td>
                 <td class="px-6 py-4 font-bold text-slate-800">${escHtml(s.name)}</td>
                 <td class="px-6 py-4 text-center font-extrabold text-slate-900">${s.score}/${data.total_steps}</td>
                 <td class="px-6 py-4 text-left text-slate-500 font-bold">${s.progress_text || "—"}</td>
                 <td class="px-6 py-4 text-center">${statusText}</td>
+                <td class="px-6 py-4 text-center">${actionBtn}</td>
               </tr>
             `;
           } else {
@@ -818,7 +850,7 @@
             const barColor = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500';
             
             return `
-              <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+              <tr class="hover:bg-slate-50 border-b border-slate-100 transition text-xs font-medium text-slate-700">
                 <td class="px-6 py-4 font-bold text-slate-500">${rank}</td>
                 <td class="px-6 py-4 font-bold text-slate-800">
                   <div class="flex items-center">
@@ -836,6 +868,9 @@
                 <td class="px-6 py-4 text-center font-bold">
                   ${statusText}
                 </td>
+                <td class="px-6 py-4 text-center">
+                  ${actionBtn}
+                </td>
               </tr>`;
           }
         }).join('');
@@ -845,6 +880,261 @@
 
     function escHtml(s) {
       return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    async function viewStudentDetail(studentId, studentName, score) {
+      document.getElementById('detailStudentName').textContent = studentName;
+      document.getElementById('detailStudentScore').textContent = score;
+      const contentEl = document.getElementById('studentDetailContent');
+      contentEl.innerHTML = '<div class="text-center py-8 text-slate-500 font-semibold">Đang tải chi tiết bài làm...</div>';
+      document.getElementById('studentDetailModal').classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/quiz/student-detail/${studentId}`);
+        if (!res.ok) {
+          throw new Error('Lỗi server');
+        }
+        const data = await res.json();
+        
+        if (data.quiz_format === 'option3') {
+          // Render option3 device + quality report
+          let html = `
+            <div class="space-y-6">
+              <div>
+                <h4 class="font-extrabold text-sm text-slate-800 border-b pb-2 uppercase tracking-wider mb-3">🖥️ Phần Thiết Bị (Device)</h4>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                  <table class="w-full text-xs text-slate-700">
+                    <thead>
+                      <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
+                        <th class="px-4 py-3 text-center w-16">STT</th>
+                        <th class="px-4 py-3 text-left">Nội dung / Mô tả</th>
+                        <th class="px-4 py-3 text-left">Học viên điền</th>
+                        <th class="px-4 py-3 text-left">Đáp án đúng</th>
+                        <th class="px-4 py-3 text-center w-24">Kết quả</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      ${data.device_report.map(r => {
+                        const statusBadge = r.is_correct
+                          ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-250 px-2 py-0.5 rounded font-bold">Đúng</span>'
+                          : '<span class="bg-rose-50 text-rose-700 border border-rose-250 px-2 py-0.5 rounded font-bold">Sai</span>';
+                        const rowClass = r.is_correct ? 'bg-emerald-50/20' : 'bg-rose-50/20';
+                        return `
+                          <tr class="${rowClass} hover:bg-slate-50 transition">
+                            <td class="px-4 py-3 text-center font-bold">${r.step_num}</td>
+                            <td class="px-4 py-3 font-semibold text-slate-600">${escHtml(r.note_text)}</td>
+                            <td class="px-4 py-3 font-bold ${r.is_correct ? 'text-emerald-700' : 'text-rose-700'}">${escHtml(r.student_val || '—')}</td>
+                            <td class="px-4 py-3 text-slate-500">${escHtml(r.correct_val || '—')}</td>
+                            <td class="px-4 py-3 text-center">${statusBadge}</td>
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <h4 class="font-extrabold text-sm text-slate-800 border-b pb-2 uppercase tracking-wider mb-3">🧪 Phần Chất Lượng (Quality)</h4>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                  <table class="w-full text-xs text-slate-700">
+                    <thead>
+                      <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
+                        <th class="px-4 py-3 text-center w-16">STT</th>
+                        <th class="px-4 py-3 text-left">Nội dung / Mô tả</th>
+                        <th class="px-4 py-3 text-left">Học viên điền</th>
+                        <th class="px-4 py-3 text-left">Đáp án đúng</th>
+                        <th class="px-4 py-3 text-center w-24">Kết quả</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      ${data.quality_report.map(r => {
+                        const statusBadge = r.is_correct
+                          ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-250 px-2 py-0.5 rounded font-bold">Đúng</span>'
+                          : '<span class="bg-rose-50 text-rose-700 border border-rose-250 px-2 py-0.5 rounded font-bold">Sai</span>';
+                        const rowClass = r.is_correct ? 'bg-emerald-50/20' : 'bg-rose-50/20';
+                        return `
+                          <tr class="${rowClass} hover:bg-slate-50 transition">
+                            <td class="px-4 py-3 text-center font-bold">${r.step_num}</td>
+                            <td class="px-4 py-3 font-semibold text-slate-600">${escHtml(r.note_text)}</td>
+                            <td class="px-4 py-3 font-bold ${r.is_correct ? 'text-emerald-700' : 'text-rose-700'}">${escHtml(r.student_val || '—')}</td>
+                            <td class="px-4 py-3 text-slate-500">${escHtml(r.correct_val || '—')}</td>
+                            <td class="px-4 py-3 text-center">${statusBadge}</td>
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          `;
+          contentEl.innerHTML = html;
+        } else if (data.quiz_format === 'option4') {
+          // Render option4 odd + even topics
+          const renderTopicTable = (report, title, colorClass) => {
+            return `
+              <div>
+                <h4 class="font-extrabold text-sm ${colorClass} border-b pb-2 uppercase tracking-wider mb-3">${title}</h4>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                  <table class="w-full text-xs text-slate-700">
+                    <thead>
+                      <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
+                        <th class="px-4 py-3 text-center w-16">STT</th>
+                        <th class="px-4 py-3 text-left w-28">Đề tài</th>
+                        <th class="px-4 py-3 text-left">Học viên nhập</th>
+                        <th class="px-4 py-3 text-left">Đáp án đúng</th>
+                        <th class="px-4 py-3 text-center w-20">Điểm đạt</th>
+                        <th class="px-4 py-3 text-center w-24">Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      ${report.map(r => {
+                        const statusBadge = r.is_correct
+                          ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-250 px-2 py-0.5 rounded font-bold">Đúng</span>'
+                          : '<span class="bg-rose-50 text-rose-700 border border-rose-250 px-2 py-0.5 rounded font-bold">Sai/Lệch</span>';
+                        const rowClass = r.is_correct ? 'bg-emerald-50/20' : 'bg-rose-50/20';
+                        return `
+                          <tr class="${rowClass} hover:bg-slate-50 transition text-xs font-medium text-slate-700">
+                            <td class="px-4 py-3 text-center font-bold">${r.step_num}</td>
+                            <td class="px-4 py-3 font-semibold text-slate-500 text-left">${escHtml(r.topic)}</td>
+                            <td class="px-4 py-3 font-bold ${r.is_correct ? 'text-emerald-700' : 'text-rose-700'}">${escHtml(r.student_val || '—')}</td>
+                            <td class="px-4 py-3 text-slate-500">${escHtml(r.correct_val || '—')}</td>
+                            <td class="px-4 py-3 text-center font-bold text-slate-900">${r.earned}/${r.max_score}</td>
+                            <td class="px-4 py-3 text-center">${statusBadge}</td>
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `;
+          };
+
+          let html = `
+            <div class="space-y-6">
+              ${renderTopicTable(data.odd_report, '⚡ Đề Lẻ (Topics 1, 3, 5, 7)', 'text-blue-700')}
+              ${renderTopicTable(data.even_report, '🌀 Đề Chẵn (Topics 2, 4, 6, 8)', 'text-purple-700')}
+            </div>
+          `;
+          contentEl.innerHTML = html;
+        } else if (data.quiz_format === 'option2') {
+          // Render option2 scores report
+          let html = `
+            <div>
+              <h4 class="font-extrabold text-sm text-slate-800 border-b pb-2 uppercase tracking-wider mb-3">TIE Matching - 9 Bài Kiểm Tra</h4>
+              <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full text-xs text-slate-700">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
+                      <th class="px-6 py-3.5 text-left">Tên Bài</th>
+                      <th class="px-6 py-3.5 text-center">Điểm đạt</th>
+                      <th class="px-6 py-3.5 text-center">Điểm tối đa</th>
+                      <th class="px-6 py-3.5 text-center">Đánh giá</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${data.report.map(r => {
+                      const isPass = r.earned > 0 && r.earned === r.max;
+                      const badge = isPass
+                        ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-250 px-2.5 py-1 rounded-full font-bold">ĐẠT</span>'
+                        : '<span class="bg-rose-50 text-rose-700 border border-rose-250 px-2.5 py-1 rounded-full font-bold">CHƯA ĐẠT</span>';
+                      const rowClass = isPass ? 'bg-emerald-50/20' : 'bg-rose-50/20';
+                      return `
+                        <tr class="${rowClass} hover:bg-slate-50 transition text-sm">
+                          <td class="px-6 py-4 font-bold text-slate-700">${escHtml(r.sub_quiz)}</td>
+                          <td class="px-6 py-4 text-center font-extrabold text-slate-900">${r.earned}</td>
+                          <td class="px-6 py-4 text-center text-slate-400">${r.max}</td>
+                          <td class="px-6 py-4 text-center">${badge}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+          contentEl.innerHTML = html;
+        } else {
+          // Render option1 (Matching Grid) report
+          let html = `
+            <div class="space-y-8">
+              ${data.report.map(r => {
+                const rowOk = r.status.row_ok;
+                const borderClass = rowOk ? 'border-emerald-200' : 'border-rose-200';
+                const headerBg = rowOk ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800';
+                const resultText = rowOk 
+                  ? '<span class="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Đúng Toàn Bộ</span>' 
+                  : '<span class="bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Có Lỗi Ghép</span>';
+
+                const renderCell = (colName, studentVal, correctVal, isOk, isImage = false) => {
+                  const cellBg = isOk ? 'bg-emerald-50/40 border-emerald-100' : 'bg-rose-50/40 border-rose-100';
+                  const textColor = isOk ? 'text-emerald-700' : 'text-rose-700';
+                  const checkIcon = isOk 
+                    ? '<svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' 
+                    : '<svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+                  
+                  let studentDisp = escHtml(studentVal || '—');
+                  let correctDisp = escHtml(correctVal || '—');
+                  
+                  if (isImage) {
+                    studentDisp = studentVal 
+                      ? `<img src="${studentVal}" class="w-16 h-12 object-cover rounded border border-slate-200 shadow-sm" />` 
+                      : '<span class="text-slate-400 italic">Trống</span>';
+                    correctDisp = correctVal 
+                      ? `<img src="${correctVal}" class="w-16 h-12 object-cover rounded border border-slate-200 shadow-sm" />` 
+                      : '<span class="text-slate-400 italic">Trống</span>';
+                  }
+
+                  return `
+                    <div class="border rounded-xl p-3 flex flex-col justify-between gap-2 shadow-sm ${cellBg}">
+                      <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">${colName}</span>
+                        <span>${checkIcon}</span>
+                      </div>
+                      <div class="text-xs space-y-1.5 flex-1">
+                        <div>
+                          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Học viên ghép:</span>
+                          <span class="font-bold ${textColor}">${studentDisp}</span>
+                        </div>
+                        <div class="border-t border-slate-100/50 pt-1.5">
+                          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Đáp án đúng:</span>
+                          <span class="font-medium text-slate-500">${correctDisp}</span>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                };
+
+                return `
+                  <div class="border rounded-2xl overflow-hidden shadow-md bg-white ${borderClass} transition hover:shadow-lg">
+                    <div class="px-4 py-3 flex justify-between items-center font-bold text-xs ${headerBg}">
+                      <span class="text-sm">Bước ${r.step_num}</span>
+                      <div>${resultText}</div>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50/30">
+                      ${renderCell('Hình ảnh', r.student.image_url, r.correct.image_url, r.status.image, true)}
+                      ${renderCell('Thao tác trái', r.student.left, r.correct.left, r.status.left)}
+                      ${renderCell('Thao tác phải', r.student.right, r.correct.right, r.status.right)}
+                      ${renderCell('Chú ý', r.student.note, r.correct.note, r.status.note)}
+                      ${renderCell('Lý do', r.student.reason, r.correct.reason, r.status.reason)}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+          contentEl.innerHTML = html;
+        }
+
+      } catch (err) {
+        contentEl.innerHTML = `<div class="text-center py-8 text-rose-500 font-semibold">Lỗi tải dữ liệu chi tiết: ${err.message}</div>`;
+      }
+    }
+
+    function closeStudentDetailModal() {
+      document.getElementById('studentDetailModal').classList.add('hidden');
     }
 
     function preparePrint() {
