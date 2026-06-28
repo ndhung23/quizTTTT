@@ -1072,12 +1072,16 @@ def reset_student():
 def get_definition(quiz_type):
     from app.models.quiz_option import QuizOption
     from app.models.quiz_step import QuizStep
+    import urllib.parse
+
+    # Unquote url encoded characters (like %20 for spaces)
+    quiz_type_unquoted = urllib.parse.unquote(quiz_type)
 
     # Recover UTF-8 if decoded as latin-1 by WSGI wrapper (Vercel serverless)
     try:
-        quiz_type_decoded = quiz_type.encode('latin-1').decode('utf-8')
+        quiz_type_decoded = quiz_type_unquoted.encode('latin-1').decode('utf-8')
     except Exception:
-        quiz_type_decoded = quiz_type
+        quiz_type_decoded = quiz_type_unquoted
 
     import unicodedata
     q_type_norm = unicodedata.normalize('NFC', quiz_type_decoded).strip() if quiz_type_decoded else ""

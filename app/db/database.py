@@ -11,7 +11,7 @@ def init_db(app):
         from app.models import user, student, session, quiz_option, quiz_step  # noqa: F401 – register models
         db.create_all()
         try:
-            db.session.execute(db.text("ALTER TABLE quiz_sessions ADD COLUMN quiz_type VARCHAR(20) DEFAULT 'option1'"))
+            db.session.execute(db.text("ALTER TABLE quiz_sessions ADD COLUMN quiz_type VARCHAR(50) DEFAULT 'option1'"))
             db.session.commit()
             print("Successfully added quiz_type column to quiz_sessions")
         except Exception:
