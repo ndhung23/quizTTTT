@@ -85,11 +85,11 @@ const SUB_QUIZ_DATA = {
     image: "/static/q8.png",
     desc: "Hãy chọn O vào vấn đề đúng và đánh dấu X vào vấn đề sai về phương pháp quan sát động tác",
     questions: [
-      { id: "1", text: "Độ khó của động tác là phương pháp quan sát động tác Đúng?" },
-      { id: "2", text: "Độ dễ của động tác là phương pháp quan sát động tác Đúng?" },
-      { id: "3", text: "Độ lớn của động tác là phương pháp quan sát động tác Đúng?" },
-      { id: "4", text: "Trình tự của động tác là phương pháp quan sát động tác Đúng?" },
-      { id: "5", text: "Phương pháp của động tác là phương pháp quan sát động tác Đúng?" }
+      { id: "1", text: "Độ khó của động tác" },
+      { id: "2", text: "Độ dễ của động tác" },
+      { id: "3", text: "Độ lớn của động tác" },
+      { id: "4", text: "Trình tự của động tác" },
+      { id: "5", text: "Phương pháp của động tác" }
     ],
     correct: { "1": "O", "2": "X", "3": "O", "4": "O", "5": "X" }
   },
