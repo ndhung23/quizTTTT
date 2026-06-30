@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quiz – Admin Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/static/js/quiz_data.js?v=1.0.3"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     body {
@@ -882,6 +883,209 @@
       return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
+    function toggleOption2SubDetail(k) {
+      const row = document.getElementById(`subDetailRow-${k}`);
+      const icon = document.getElementById(`toggleIcon-${k}`);
+      if (row.classList.contains('hidden')) {
+        row.classList.remove('hidden');
+        icon.textContent = '−';
+      } else {
+        row.classList.add('hidden');
+        icon.textContent = '+';
+      }
+    }
+
+    function renderSubQuizDetails(k, answers) {
+      if (typeof SUB_QUIZ_DATA === 'undefined') {
+        return '<div class="text-rose-500 font-bold p-3">Lỗi: Không tìm thấy dữ liệu câu hỏi hệ thống.</div>';
+      }
+      const quiz = SUB_QUIZ_DATA[k];
+      if (!quiz) {
+        return '<div class="text-rose-500 font-bold p-3">Lỗi: Không tìm thấy bài kiểm tra #' + k + '</div>';
+      }
+
+      if (quiz.type === 'matching') {
+        let html = '<div class="space-y-3">';
+        quiz.left.forEach((term, idx) => {
+          const correctId = quiz.correct[idx];
+          const studentId = answers[idx] || '—';
+          const isCorrect = (studentId === correctId);
+          
+          const correctRight = quiz.right.find(r => r.id === correctId);
+          const correctText = correctRight ? correctRight.text : '';
+          
+          const studentRight = quiz.right.find(r => r.id === studentId);
+          const studentText = studentRight ? studentRight.text : 'Không ghép / Chưa trả lời';
+
+          const bgClass = isCorrect ? 'bg-emerald-50/50 border-emerald-250/60' : 'bg-rose-50/50 border-rose-250/60';
+          const textClass = isCorrect ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold';
+          const checkIcon = isCorrect ? '✅' : '❌';
+
+          html += `
+            <div class="p-3 border rounded-xl ${bgClass} text-xs">
+              <div class="flex items-center justify-between font-bold mb-1">
+                <span class="text-slate-800">Cặp ghép ${idx + 1}: ${escHtml(term)}</span>
+                <span class="${textClass}">${checkIcon} ${isCorrect ? 'Đúng' : 'Sai'}</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1.5 pt-1.5 border-t border-slate-200/40">
+                <div>
+                  <span class="font-bold text-slate-500">Học viên chọn:</span>
+                  <div class="font-semibold text-slate-700 mt-0.5">${studentId}. ${escHtml(studentText)}</div>
+                </div>
+                ${!isCorrect ? `
+                <div>
+                  <span class="font-bold text-emerald-600">Đáp án đúng:</span>
+                  <div class="font-semibold text-emerald-800 mt-0.5">${correctId}. ${escHtml(correctText)}</div>
+                </div>` : ''}
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        return html;
+      }
+
+      if (quiz.type === 'fill') {
+        let html = '<div class="space-y-3">';
+        let paragraph = quiz.text;
+        Object.keys(quiz.correct).forEach(idx => {
+          const studentAns = answers[idx] || '—';
+          const correctAns = quiz.correct[idx];
+          const isCorrect = (studentAns === correctAns);
+          const colorClass = isCorrect ? 'text-emerald-700 font-extrabold bg-emerald-50 px-1 rounded border border-emerald-200/50' : 'text-rose-700 font-extrabold bg-rose-50 px-1 rounded border border-rose-250/50';
+          paragraph = paragraph.replace(`{${idx}}`, `<span class="${colorClass}">${escHtml(studentAns)}</span>`);
+        });
+
+        html += `
+          <div class="p-4 bg-slate-100 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed font-medium">
+            <span class="font-bold text-slate-800 block mb-1">Văn bản điền khuyết:</span>
+            ${paragraph}
+          </div>
+        `;
+
+        html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
+        Object.keys(quiz.correct).forEach(idx => {
+          const studentAns = answers[idx] || '—';
+          const correctAns = quiz.correct[idx];
+          const isCorrect = (studentAns === correctAns);
+          const bgClass = isCorrect ? 'bg-emerald-50/50 border-emerald-250/60' : 'bg-rose-50/50 border-rose-250/60';
+          const textClass = isCorrect ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold';
+          const checkIcon = isCorrect ? '✅' : '❌';
+
+          html += `
+            <div class="p-2.5 border rounded-lg ${bgClass} text-xs flex justify-between items-center">
+              <div>
+                <span class="font-bold text-slate-700">Ô trống ${parseInt(idx) + 1}:</span>
+                <span class="ml-1.5 font-semibold text-slate-600">Đã điền: <strong class="${textClass}">${escHtml(studentAns)}</strong></span>
+                ${!isCorrect ? `<div class="mt-0.5 text-xs text-emerald-600 font-bold">Đáp án đúng: ${escHtml(correctAns)}</div>` : ''}
+              </div>
+              <span class="${textClass}">${checkIcon}</span>
+            </div>
+          `;
+        });
+        html += '</div></div>';
+        return html;
+      }
+
+      if (quiz.type === 'single_choice_image') {
+        const correctVal = quiz.correct[0];
+        const studentVal = answers[0] || '—';
+        const isCorrect = (studentVal === correctVal);
+        const bgClass = isCorrect ? 'bg-emerald-50/50 border-emerald-250/60' : 'bg-rose-50/50 border-rose-250/60';
+        const textClass = isCorrect ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold';
+        const checkIcon = isCorrect ? '✅' : '❌';
+
+        return `
+          <div class="p-3 border rounded-xl ${bgClass} text-xs flex flex-col md:flex-row gap-4 items-center">
+            ${quiz.image ? `<img src="${quiz.image}" class="max-h-36 rounded border border-slate-200 object-contain bg-white mx-auto">` : ''}
+            <div class="flex-1 space-y-2 text-left w-full">
+              <div class="flex items-center justify-between font-bold">
+                <span class="text-slate-800">Câu hỏi hình ảnh</span>
+                <span class="${textClass}">${checkIcon} ${isCorrect ? 'Đúng' : 'Sai'}</span>
+              </div>
+              <div>
+                <span class="font-bold text-slate-500">Học viên chọn:</span>
+                <span class="font-extrabold ${textClass} ml-1">${escHtml(studentVal)}</span>
+              </div>
+              ${!isCorrect ? `
+              <div>
+                <span class="font-bold text-emerald-600">Đáp án đúng:</span>
+                <span class="font-extrabold text-emerald-700 ml-1">${escHtml(correctVal)}</span>
+              </div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      if (quiz.type === 'custom_inputs_image') {
+        let html = '<div class="space-y-3">';
+        html += `
+          <div class="flex flex-col md:flex-row gap-4 items-start">
+            ${quiz.image ? `<img src="${quiz.image}" class="max-h-48 rounded border border-slate-200 object-contain bg-white mx-auto md:mx-0">` : ''}
+            <div class="flex-1 w-full space-y-2">
+              <span class="font-bold text-slate-800 text-xs block mb-1">Kết quả điền:</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        `;
+
+        quiz.inputs.forEach(key => {
+          const correctVal = quiz.correct[key];
+          const studentVal = answers[key] || '—';
+          const isCorrect = (String(studentVal).trim().toUpperCase() === String(correctVal).trim().toUpperCase());
+          const bgClass = isCorrect ? 'bg-emerald-50/50 border-emerald-250/60' : 'bg-rose-50/50 border-rose-250/60';
+          const textClass = isCorrect ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold';
+          const checkIcon = isCorrect ? '✅' : '❌';
+
+          html += `
+            <div class="p-2 border rounded-lg ${bgClass} text-xs flex justify-between items-center">
+              <div>
+                <span class="font-bold text-slate-700">${key}:</span>
+                <span class="font-extrabold ${textClass} ml-1">${escHtml(studentVal)}</span>
+                ${!isCorrect ? `<span class="font-bold text-emerald-650 ml-2">(Đúng: ${escHtml(correctVal)})</span>` : ''}
+              </div>
+              <span class="${textClass}">${checkIcon}</span>
+            </div>
+          `;
+        });
+
+        html += '</div></div></div>';
+        return html;
+      }
+
+      if (quiz.type === 'tf') {
+        let html = '<div class="space-y-2">';
+        if (quiz.image) {
+          html += `<img src="${quiz.image}" class="max-h-40 rounded border border-slate-200 object-contain bg-white mb-2 mx-auto md:mx-0">`;
+        }
+
+        quiz.questions.forEach(q => {
+          const correctVal = quiz.correct[q.id];
+          const studentVal = answers[q.id] || '—';
+          const isCorrect = (studentVal === correctVal);
+          const bgClass = isCorrect ? 'bg-emerald-50/50 border-emerald-250/60' : 'bg-rose-50/50 border-rose-250/60';
+          const textClass = isCorrect ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold';
+          const checkIcon = isCorrect ? '✅' : '❌';
+
+          html += `
+            <div class="p-2.5 border rounded-lg ${bgClass} text-xs flex justify-between items-center">
+              <div class="flex-1 pr-4">
+                <span class="font-bold text-slate-800">${q.id}. ${escHtml(q.text)}</span>
+              </div>
+              <div class="flex items-center gap-4">
+                <span class="font-semibold text-slate-500">Đã chọn: <strong class="${textClass}">${escHtml(studentVal)}</strong></span>
+                ${!isCorrect ? `<span class="font-semibold text-emerald-600">Đúng: <strong>${escHtml(correctVal)}</strong></span>` : ''}
+                <span class="${textClass}">${checkIcon}</span>
+              </div>
+            </div>
+          `;
+        });
+
+        html += '</div>';
+        return html;
+      }
+
+      return '<div class="text-slate-400 italic">Không hỗ trợ kiểu câu hỏi này.</div>';
+    }
+
     async function viewStudentDetail(studentId, studentName, score) {
       document.getElementById('detailStudentName').textContent = studentName;
       document.getElementById('detailStudentScore').textContent = score;
@@ -1022,36 +1226,42 @@
         } else if (data.quiz_format === 'option2') {
           // Render option2 scores report
           let html = `
-            <div>
-              <h4 class="font-extrabold text-sm text-slate-800 border-b pb-2 uppercase tracking-wider mb-3">TIE Matching - 9 Bài Kiểm Tra</h4>
-              <div class="overflow-x-auto rounded-xl border border-slate-200">
-                <table class="w-full text-xs text-slate-700">
-                  <thead>
-                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
-                      <th class="px-6 py-3.5 text-left">Tên Bài</th>
-                      <th class="px-6 py-3.5 text-center">Điểm đạt</th>
-                      <th class="px-6 py-3.5 text-center">Điểm tối đa</th>
-                      <th class="px-6 py-3.5 text-center">Đánh giá</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    ${data.report.map(r => {
-                      const isPass = r.earned > 0 && r.earned === r.max;
-                      const badge = isPass
-                        ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-250 px-2.5 py-1 rounded-full font-bold">ĐẠT</span>'
-                        : '<span class="bg-rose-50 text-rose-700 border border-rose-250 px-2.5 py-1 rounded-full font-bold">CHƯA ĐẠT</span>';
-                      const rowClass = isPass ? 'bg-emerald-50/20' : 'bg-rose-50/20';
-                      return `
-                        <tr class="${rowClass} hover:bg-slate-50 transition text-sm">
-                          <td class="px-6 py-4 font-bold text-slate-700">${escHtml(r.sub_quiz)}</td>
-                          <td class="px-6 py-4 text-center font-extrabold text-slate-900">${r.earned}</td>
-                          <td class="px-6 py-4 text-center text-slate-400">${r.max}</td>
-                          <td class="px-6 py-4 text-center">${badge}</td>
-                        </tr>
-                      `;
-                    }).join('')}
-                  </tbody>
-                </table>
+            <div class="space-y-6">
+              <h4 class="font-extrabold text-sm text-slate-800 border-b pb-2 uppercase tracking-wider mb-2">TIE Matching - Chi tiết 9 bài kiểm tra</h4>
+              <div class="space-y-4">
+                ${data.report.map((r, index) => {
+                  const k = String(index + 1);
+                  const isPass = r.earned > 0 && r.earned === r.max;
+                  const badge = isPass
+                    ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-250 px-2.5 py-0.5 rounded text-xs font-bold">ĐẠT</span>'
+                    : '<span class="bg-rose-50 text-rose-700 border border-rose-250 px-2.5 py-0.5 rounded text-xs font-bold">CHƯA ĐẠT</span>';
+                  const headerBg = isPass ? 'bg-emerald-50/40 border-emerald-100' : 'bg-rose-50/40 border-rose-100';
+                  
+                  const studentAnswersForQuiz = data.student_answers ? data.student_answers[k] : null;
+                  let detailsHtml = '';
+                  if (!data.student_answers || Object.keys(data.student_answers).length === 0) {
+                    detailsHtml = '<div class="text-slate-400 italic text-xs py-2 px-6">Bài làm này nộp từ trước nên chưa có lưu trữ lịch sử câu trả lời chi tiết.</div>';
+                  } else if (!studentAnswersForQuiz) {
+                    detailsHtml = '<div class="text-slate-400 italic text-xs py-2 px-6">Học viên bỏ qua hoặc chưa làm bài này.</div>';
+                  } else {
+                    detailsHtml = renderSubQuizDetails(k, studentAnswersForQuiz);
+                  }
+
+                  return `
+                    <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                      <div class="flex items-center justify-between px-4 py-3 ${headerBg} border-b border-slate-200/80">
+                        <span class="font-bold text-slate-800 text-sm">${escHtml(r.sub_quiz)}</span>
+                        <div class="flex items-center gap-3">
+                          <span class="font-extrabold text-slate-900 text-xs">${r.earned}/${r.max} đ</span>
+                          ${badge}
+                        </div>
+                      </div>
+                      <div class="p-4 bg-slate-50/20">
+                        ${detailsHtml}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
               </div>
             </div>
           `;

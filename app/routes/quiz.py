@@ -361,16 +361,20 @@ def submit_quiz():
     elif session.quiz_type == "option2":
         sub_quiz_id = str(data.get("sub_quiz_id"))
         sub_score = data.get("sub_score", 0)
+        answers = data.get("answers", {})
 
         # Check and initialize answer_order structure
         import copy
         ao = copy.deepcopy(student.answer_order)
         if not isinstance(ao, dict):
-            ao = {"scores": {}}
+            ao = {"scores": {}, "answers": {}}
         if "scores" not in ao:
             ao["scores"] = {}
+        if "answers" not in ao:
+            ao["answers"] = {}
 
         ao["scores"][sub_quiz_id] = sub_score
+        ao["answers"][sub_quiz_id] = answers
         student.answer_order = ao
         student.score = sum(ao["scores"].values())
         db.session.commit()
@@ -567,10 +571,36 @@ def get_student_detail(student_id):
     if not session:
         abort(404, description="Không tìm thấy phòng thi")
 
-    from app.models.quiz_option import QuizOption
-    from app.models.quiz_step import QuizStep
     import unicodedata
     q_type_norm = unicodedata.normalize('NFC', session.quiz_type) if session.quiz_type else ""
+
+    if q_type_norm == "option2":
+        scores = student.answer_order.get("scores", {}) if isinstance(student.answer_order, dict) else {}
+        sub_quiz_max = {
+            "1": 5, "2": 7, "3": 5, "4": 5, "5": 2, "6": 4, "7": 4, "8": 5, "9": 10
+        }
+        report = []
+        for k in sorted(sub_quiz_max.keys(), key=int):
+            earned = scores.get(k, 0)
+            max_val = sub_quiz_max[k]
+            report.append({
+                "sub_quiz": f"Bài {k}",
+                "earned": earned,
+                "max": max_val,
+                "is_dat": earned > 0 and earned == max_val
+            })
+        answers = student.answer_order.get("answers", {}) if isinstance(student.answer_order, dict) else {}
+        return jsonify({
+            "quiz_format": "option2",
+            "quiz_title": "Kiểm tra TIE",
+            "student_name": student.name,
+            "score": student.score,
+            "report": report,
+            "student_answers": answers
+        })
+
+    from app.models.quiz_option import QuizOption
+    from app.models.quiz_step import QuizStep
     option = QuizOption.query.filter_by(code=q_type_norm).first()
     if not option:
         abort(404, description="Không tìm thấy cấu hình đề thi")
@@ -898,30 +928,6 @@ def get_student_detail(student_id):
             "odd_report": odd_report,
             "even_report": even_report
         })
-        
-    elif session.quiz_type == "option2":
-        scores = student.answer_order.get("scores", {}) if isinstance(student.answer_order, dict) else {}
-        sub_quiz_max = {
-            "1": 5, "2": 7, "3": 5, "4": 5, "5": 2, "6": 4, "7": 4, "8": 5, "9": 10
-        }
-        report = []
-        for k in sorted(sub_quiz_max.keys(), key=int):
-            earned = scores.get(k, 0)
-            max_val = sub_quiz_max[k]
-            report.append({
-                "sub_quiz": f"Bài {k}",
-                "earned": earned,
-                "max": max_val,
-                "is_dat": earned > 0 and earned == max_val
-            })
-        return jsonify({
-            "quiz_format": "option2",
-            "quiz_title": "Kiểm tra TIE",
-            "student_name": student.name,
-            "score": student.score,
-            "report": report
-        })
-        
     else: # option1 or custom format
         answer_order = student.answer_order if isinstance(student.answer_order, list) else []
         report = []

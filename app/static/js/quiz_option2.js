@@ -398,6 +398,7 @@ async function gradeAndSubmitSubQuiz() {
   
   let score = 0;
   let allAnswered = true;
+  let answers = {};
 
   if (quiz.type === 'matching') {
     const selects = document.querySelectorAll('.sub-quiz-input');
@@ -405,6 +406,7 @@ async function gradeAndSubmitSubQuiz() {
       const leftIdx = select.dataset.leftIdx;
       const answer = select.value;
       if (!answer) allAnswered = false;
+      answers[leftIdx] = answer;
       if (quiz.correct[leftIdx] === answer) {
         score++;
       }
@@ -415,6 +417,7 @@ async function gradeAndSubmitSubQuiz() {
       const blankIdx = select.dataset.blankIdx;
       const answer = select.value;
       if (!answer) allAnswered = false;
+      answers[blankIdx] = answer;
       if (quiz.correct[blankIdx] === answer) {
         score++;
       }
@@ -427,8 +430,10 @@ async function gradeAndSubmitSubQuiz() {
         const selected = document.querySelector(`input[name="tf-${q.id}"]:checked`);
         if (!selected) {
           allAnswered = false;
+          answers[q.id] = "";
         } else {
           const val = selected.value;
+          answers[q.id] = val;
           if (quiz.correct[q.id] === val) {
             score++;
           }
@@ -441,6 +446,7 @@ async function gradeAndSubmitSubQuiz() {
         const qId = select.dataset.questionId;
         const answer = select.value;
         if (!answer) allAnswered = false;
+        answers[qId] = answer;
         if (quiz.correct[qId] === answer) {
           score++;
         }
@@ -450,8 +456,10 @@ async function gradeAndSubmitSubQuiz() {
     const selected = document.querySelector(`input[name="q${id}-option"]:checked`);
     if (!selected) {
       allAnswered = false;
+      answers[0] = "";
     } else {
       const val = selected.value;
+      answers[0] = val;
       if (quiz.correct[0] === val) {
         score = 4;
       }
@@ -463,6 +471,7 @@ async function gradeAndSubmitSubQuiz() {
       const key = input.dataset.key;
       const answer = input.value.trim();
       if (!answer) allAnswered = false;
+      answers[key] = answer;
       if (quiz.correct[key].toUpperCase() === answer.toUpperCase()) {
         score++;
       }
@@ -487,7 +496,8 @@ async function gradeAndSubmitSubQuiz() {
       body: JSON.stringify({
         student_id: studentId,
         sub_quiz_id: id,
-        sub_score: score
+        sub_score: score,
+        answers: answers
       })
     });
     const data = await res.json();
