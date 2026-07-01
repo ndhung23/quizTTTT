@@ -35,6 +35,7 @@
       #tab-quizzes,
       #liveLabel,
       #btnPrintResults,
+      #btnExportExcel,
       #resultsCard h2 {
         display: none !important;
       }
@@ -258,10 +259,18 @@
                 <h2 class="text-base font-bold text-slate-900">Kết quả thời gian thực</h2>
                 <span class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-semibold animate-pulse" id="liveLabel">● Tự động cập nhật 2s</span>
               </div>
-              <button id="btnPrintResults" onclick="preparePrint()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-500/10 text-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                <span>In kết quả</span>
-              </button>
+              <div class="flex gap-2">
+                <button id="btnExportExcel" onclick="exportResultsToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-emerald-500/10 text-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5l2 2h9a2 2 0 012 2v12a2 2 0 01-2 2z"/>
+                  </svg>
+                  <span>Xuất Excel</span>
+                </button>
+                <button id="btnPrintResults" onclick="preparePrint()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-500/10 text-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                  <span>In kết quả</span>
+                </button>
+              </div>
             </div>
 
             <div class="overflow-x-auto custom-scrollbar">
@@ -675,6 +684,7 @@
     // ==================== TAB 1: SESSIONS LOGIC ====================
     let currentCode = null;
     let autoRefreshTimer = null;
+    let lastFetchedResultsData = null;
 
     async function startQuiz() {
       const btn = document.getElementById('startBtn');
@@ -730,6 +740,7 @@
         const res = await fetch('/quiz/results?code=' + currentCode);
         if (!res.ok) return;
         const data = await res.json();
+        lastFetchedResultsData = data;
 
         const students = data.students || [];
         const joined = students.length;
@@ -753,6 +764,7 @@
               <th class="px-4 py-3 text-left">Học viên</th>
               <th class="px-4 py-3 text-center">Điểm đạt được</th>
               <th class="px-4 py-3 text-left">Điểm từng bài</th>
+              <th class="px-4 py-3 text-center">Thoát tab</th>
               <th class="px-4 py-3 text-center">Trạng thái</th>
               <th class="px-4 py-3 text-center">Kết quả</th>
               <th class="px-4 py-3 text-center rounded-r-xl w-32">Hành động</th>
@@ -765,6 +777,7 @@
               <th class="px-6 py-3.5 text-left">Học viên</th>
               <th class="px-6 py-3.5 text-center">Tổng điểm</th>
               <th class="px-6 py-3.5 text-left">Chi tiết</th>
+              <th class="px-6 py-3.5 text-center">Thoát tab</th>
               <th class="px-6 py-3.5 text-center">Trạng thái</th>
               <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Hành động</th>
             </tr>
@@ -775,6 +788,7 @@
               <th class="px-6 py-3.5 text-left rounded-l-xl w-16">Hạng</th>
               <th class="px-6 py-3.5 text-left">Học viên</th>
               <th class="px-6 py-3.5 text-center">Điểm</th>
+              <th class="px-6 py-3.5 text-center">Thoát tab</th>
               <th class="px-6 py-3.5 text-center">Trạng thái</th>
               <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Hành động</th>
             </tr>
@@ -783,7 +797,7 @@
 
         const tbody = document.getElementById('resultsBody');
         if (students.length === 0) {
-          const colSpan = data.quiz_type === 'option2' ? 7 : (data.quiz_format === 'option3' || data.quiz_format === 'option4' ? 6 : 5);
+          const colSpan = data.quiz_type === 'option2' ? 8 : (data.quiz_format === 'option3' || data.quiz_format === 'option4' ? 7 : 6);
           tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center text-slate-400 py-8">Chưa có học viên nào</td></tr>`;
           return;
         }
@@ -830,6 +844,7 @@
                 <td class="px-4 py-3.5 font-bold text-slate-800 text-left">${escHtml(s.name)}</td>
                 <td class="px-4 py-3.5 text-center font-bold text-slate-900">${s.score}/${data.total_steps}</td>
                 <td class="px-4 py-3.5 text-left text-slate-500">${subScoresFormatted}</td>
+                <td class="px-4 py-3.5 text-center font-bold ${s.tab_switch_count > 0 ? 'text-rose-600 bg-rose-50/50 rounded px-1.5 py-0.5' : 'text-slate-400'}">${s.tab_switch_count || 0}</td>
                 <td class="px-4 py-3.5 text-center">${statusText}</td>
                 <td class="px-4 py-3.5 text-center">${resultBadge}</td>
                 <td class="px-4 py-3.5 text-center">${actionBtn}</td>
@@ -842,6 +857,7 @@
                 <td class="px-6 py-4 font-bold text-slate-800">${escHtml(s.name)}</td>
                 <td class="px-6 py-4 text-center font-extrabold text-slate-900">${s.score}/${data.total_steps}</td>
                 <td class="px-6 py-4 text-left text-slate-500 font-bold">${s.progress_text || "—"}</td>
+                <td class="px-6 py-4 text-center font-bold ${s.tab_switch_count > 0 ? 'text-rose-600 bg-rose-50/50 rounded px-1.5 py-0.5' : 'text-slate-400'}">${s.tab_switch_count || 0}</td>
                 <td class="px-6 py-4 text-center">${statusText}</td>
                 <td class="px-6 py-4 text-center">${actionBtn}</td>
               </tr>
@@ -866,6 +882,7 @@
                     <span class="font-extrabold text-slate-700">${s.score}/${data.total_steps}</span>
                   </div>
                 </td>
+                <td class="px-6 py-4 text-center font-bold ${s.tab_switch_count > 0 ? 'text-rose-600 bg-rose-50/50 rounded px-1.5 py-0.5' : 'text-slate-400'}">${s.tab_switch_count || 0}</td>
                 <td class="px-6 py-4 text-center font-bold">
                   ${statusText}
                 </td>
@@ -881,6 +898,105 @@
 
     function escHtml(s) {
       return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function exportResultsToExcel() {
+      if (!lastFetchedResultsData || !lastFetchedResultsData.students || lastFetchedResultsData.students.length === 0) {
+        alert("Chưa có kết quả để xuất!");
+        return;
+      }
+
+      const data = lastFetchedResultsData;
+      const students = data.students;
+
+      let csvContent = "";
+
+      if (data.quiz_type === 'option2') {
+        const headers = ["Hang", "Ho ten", "Tong diem", "Bai 1", "Bai 2", "Bai 3", "Bai 4", "Bai 5", "Bai 6", "Bai 7", "Bai 8", "Bai 9", "So lan thoat tab", "Trang thai", "Ket qua"];
+        csvContent += headers.join(",") + "\n";
+
+        students.forEach((s, idx) => {
+          const rank = idx + 1;
+          const scores = (s.answer_order && s.answer_order.scores) ? s.answer_order.scores : {};
+
+          let isDat = true;
+          for (let k = 1; k <= 9; k++) {
+            const scoreVal = scores[k.toString()];
+            if (scoreVal === undefined || scoreVal === null || parseFloat(scoreVal) === 0) {
+              isDat = false;
+              break;
+            }
+          }
+
+          const status = s.submitted ? "Da nop bai" : "Cho nop...";
+          const result = (isDat && s.submitted) ? "DAT" : "KHONG DAT";
+          const tabSwitch = s.tab_switch_count || 0;
+
+          const row = [
+            rank,
+            `"${s.name.replace(/"/g, '""')}"`,
+            s.score,
+            scores["1"] !== undefined ? scores["1"] : 0,
+            scores["2"] !== undefined ? scores["2"] : 0,
+            scores["3"] !== undefined ? scores["3"] : 0,
+            scores["4"] !== undefined ? scores["4"] : 0,
+            scores["5"] !== undefined ? scores["5"] : 0,
+            scores["6"] !== undefined ? scores["6"] : 0,
+            scores["7"] !== undefined ? scores["7"] : 0,
+            scores["8"] !== undefined ? scores["8"] : 0,
+            scores["9"] !== undefined ? scores["9"] : 0,
+            tabSwitch,
+            `"${status}"`,
+            `"${result}"`
+          ];
+          csvContent += row.join(",") + "\n";
+        });
+      } else if (data.quiz_format === 'option3' || data.quiz_format === 'option4') {
+        const headers = ["Hang", "Ho ten", "Tong diem", "Chi tiet", "So lan thoat tab", "Trang thai"];
+        csvContent += headers.join(",") + "\n";
+
+        students.forEach((s, idx) => {
+          const rank = idx + 1;
+          const status = s.submitted ? "Da nop bai" : "Cho nop...";
+          const tabSwitch = s.tab_switch_count || 0;
+          const row = [
+            rank,
+            `"${s.name.replace(/"/g, '""')}"`,
+            s.score,
+            `"${(s.progress_text || "").replace(/"/g, '""')}"`,
+            tabSwitch,
+            `"${status}"`
+          ];
+          csvContent += row.join(",") + "\n";
+        });
+      } else {
+        const headers = ["Hang", "Ho ten", "Tong diem", "So lan thoat tab", "Trang thai"];
+        csvContent += headers.join(",") + "\n";
+
+        students.forEach((s, idx) => {
+          const rank = idx + 1;
+          const status = s.submitted ? "Da nop bai" : "Cho nop...";
+          const tabSwitch = s.tab_switch_count || 0;
+          const row = [
+            rank,
+            `"${s.name.replace(/"/g, '""')}"`,
+            s.score,
+            tabSwitch,
+            `"${status}"`
+          ];
+          csvContent += row.join(",") + "\n";
+        });
+      }
+
+      const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Ket_qua_room_${data.code || 'export'}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     function toggleOption2SubDetail(k) {

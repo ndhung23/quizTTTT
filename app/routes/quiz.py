@@ -79,7 +79,14 @@ def join_quiz():
 
     existing = Student.query.filter_by(name=name, session_id=session.id).first()
     if existing:
-        return jsonify({"ok": True, "student_id": existing.id, "session_id": session.id, "quiz_type": session.quiz_type, "message": "Tái kết nối"})
+        return jsonify({
+            "ok": True,
+            "student_id": existing.id,
+            "session_id": session.id,
+            "quiz_type": session.quiz_type,
+            "message": "Tái kết nối",
+            "tab_switch_count": existing.tab_switch_count or 0
+        })
 
     student = Student(name=name, score=0, session_id=session.id)
     db.session.add(student)
@@ -553,7 +560,8 @@ def get_results():
                 "score": s.score,
                 "submitted": is_submitted(s),
                 "progress_text": get_progress_info(s),
-                "answer_order": s.answer_order
+                "answer_order": s.answer_order,
+                "tab_switch_count": s.tab_switch_count or 0
             }
             for s in students
         ],
@@ -1403,4 +1411,32 @@ def update_steps_batch(option_id):
 
     db.session.commit()
     return jsonify({"ok": True, "message": "Cập nhật các cấu hình thành công"})
+
+
+# ─── POST /quiz/tab-switch ─────────────────────────────────────────
+@quiz_bp.post("/tab-switch")
+def post_tab_switch():
+    data = request.get_json(force=True) or {}
+    student_id = data.get("student_id")
+    count = data.get("count", 0)
+
+    student = Student.query.filter_by(id=student_id).first()
+    if not student:
+        abort(404, description="Không tìm thấy học viên")
+
+    student.tab_switch_count = count
+    db.session.commit()
+    return jsonify({"ok": True, "tab_switch_count": student.tab_switch_count})
+
+
+# ─── GET /quiz/student-status/<int:student_id> ─────────────────────
+@quiz_bp.get("/student-status/<int:student_id>")
+def get_student_status(student_id):
+    student = Student.query.filter_by(id=student_id).first()
+    if not student:
+        return jsonify({"ok": False, "error": "Không tìm thấy học viên"})
+    return jsonify({
+        "ok": True,
+        "tab_switch_count": student.tab_switch_count or 0
+    })
 

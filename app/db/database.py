@@ -28,6 +28,12 @@ def init_db(app):
             print("Successfully added quiz_format column to quiz_options")
         except Exception:
             db.session.rollback()
+        try:
+            db.session.execute(db.text("ALTER TABLE students ADD COLUMN tab_switch_count INTEGER DEFAULT 0"))
+            db.session.commit()
+            print("Successfully added tab_switch_count column to students")
+        except Exception:
+            db.session.rollback()
         _seed_users()
         _seed_quiz_options()
 

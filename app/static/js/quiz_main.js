@@ -1,6 +1,21 @@
 // ═══════════════════════════════════════════════════════
-//  AUTO-FILL ROOM CODE FROM URL
+//  TAB SWITCH DETECTOR
 // ═══════════════════════════════════════════════════════
+let tabSwitchCount = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    tabSwitchCount++;
+    console.log('Tab switched away! Count:', tabSwitchCount);
+    if (studentId) {
+      fetch('/quiz/tab-switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, count: tabSwitchCount })
+      }).catch(e => console.error(e));
+    }
+  }
+});
+
 const _code = new URLSearchParams(location.search).get('code');
 if (_code) {
   const codeInput = document.getElementById('codeInput');
@@ -41,6 +56,7 @@ if (joinForm) {
       studentName = name;
       quizType = data.quiz_type || 'option1';
       sessionCode = code;
+      tabSwitchCount = data.tab_switch_count || 0;
 
       // Save session in localStorage
       localStorage.setItem('studentId', studentId);
@@ -253,6 +269,15 @@ window.addEventListener('DOMContentLoaded', () => {
           
           restoreWipProgress();
           initJoinedScreen();
+
+          // Sync tab switch count from server
+          fetch('/quiz/student-status/' + studentId)
+            .then(res => res.json())
+            .then(sData => {
+              if (sData.ok) {
+                tabSwitchCount = sData.tab_switch_count || 0;
+              }
+            }).catch(e => console.error(e));
         } else {
           clearStudentSession();
         }

@@ -9,3 +9,4 @@ class Student(db.Model):
     score        = db.Column(db.Integer, default=0)
     answer_order = db.Column(db.JSON, nullable=True)
     session_id   = db.Column(db.Integer, db.ForeignKey("quiz_sessions.id"), nullable=False)
+    tab_switch_count = db.Column(db.Integer, default=0, server_default="0")
