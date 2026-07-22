@@ -97,6 +97,7 @@ async function loadQuizDefinitionAndStart() {
     document.getElementById('screenOption2').classList.add('hidden');
     document.getElementById('screenOption3').classList.add('hidden');
     document.getElementById('screenOption4').classList.add('hidden');
+    document.getElementById('screenOption5').classList.add('hidden');
 
     if (qFormat === 'option3') {
       document.getElementById('screenOption3').classList.remove('hidden');
@@ -106,6 +107,11 @@ async function loadQuizDefinitionAndStart() {
       document.getElementById('screenOption4').classList.remove('hidden');
       document.getElementById('studentNameO4').textContent = studentName;
       initOption4();
+    } else if (qFormat === 'option5') {
+      document.getElementById('screenOption5').classList.remove('hidden');
+      document.getElementById('studentNameO5').textContent = studentName;
+      document.getElementById('quizTitleHeaderO5').textContent = activeQuizTitle;
+      initOption5();
     } else {
       document.getElementById('screenOption1').classList.remove('hidden');
       document.getElementById('studentNameO1').textContent = studentName;
@@ -173,6 +179,7 @@ async function retakeQuiz() {
         document.getElementById('screenOption1').classList.add('hidden');
         document.getElementById('screenOption3').classList.add('hidden');
         document.getElementById('screenOption4').classList.add('hidden');
+        document.getElementById('screenOption5').classList.add('hidden');
 
         if (qFormat === 'option3') {
           document.getElementById('screenOption3').classList.remove('hidden');
@@ -180,6 +187,11 @@ async function retakeQuiz() {
         } else if (qFormat === 'option4') {
           document.getElementById('screenOption4').classList.remove('hidden');
           initOption4();
+        } else if (qFormat === 'option5') {
+          document.getElementById('screenOption5').classList.remove('hidden');
+          document.getElementById('studentNameO5').textContent = studentName;
+          document.getElementById('quizTitleHeaderO5').textContent = activeQuizTitle;
+          initOption5();
         } else {
           gridPlacement = Array.from({length: activeQuizSteps.length}, () => ({
             image_id: null,
@@ -249,6 +261,8 @@ window.addEventListener('DOMContentLoaded', () => {
                       showO3Results(resultsObj);
                     } else if (qFormat === 'option4') {
                       showO4Results(resultsObj);
+                    } else if (qFormat === 'option5') {
+                      showOption5Result(resultsObj);
                     } else {
                       const savedPlacement = localStorage.getItem('gridPlacement_' + studentId);
                       if (savedPlacement) gridPlacement = JSON.parse(savedPlacement);

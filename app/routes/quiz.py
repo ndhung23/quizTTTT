@@ -129,6 +129,22 @@ def submit_quiz():
         except Exception:
             return default
 
+    if option and option.quiz_format == "option5":
+        answers = data.get("matching_answers", {})
+        steps = QuizStep.query.filter_by(option_id=option.id).order_by(QuizStep.step_num).all()
+        valid_ids = {str(step.id): step for step in steps}
+        score = 0
+        for step in steps:
+            selected_id = str(answers.get(str(step.id), ""))
+            selected = valid_ids.get(selected_id)
+            if selected and selected.id == step.id:
+                score += 1
+
+        student.score = score
+        student.answer_order = {"matching_answers": answers}
+        db.session.commit()
+        return jsonify({"done": True, "score": score, "total": len(steps)})
+
     if option and option.quiz_format == "option3":
         device_answers = data.get("device_answers", [])
         quality_answers = data.get("quality_answers", [])
@@ -495,7 +511,9 @@ def get_results():
             return str(val)
 
     if option:
-        if option.quiz_format == "option3":
+        if option.quiz_format == "option5":
+            total_steps = QuizStep.query.filter_by(option_id=option.id).count()
+        elif option.quiz_format == "option3":
             total_steps = 36
         elif option.quiz_format == "option4":
             steps = QuizStep.query.filter_by(option_id=option.id).order_by(QuizStep.step_num).all()
@@ -629,6 +647,27 @@ def get_student_detail(student_id):
             return default
 
     # Prepare detail report
+    if option.quiz_format == "option5":
+        answers = student.answer_order.get("matching_answers", {}) if isinstance(student.answer_order, dict) else {}
+        by_id = {str(s.id): s for s in steps}
+        report = []
+        for step in steps:
+            selected = by_id.get(str(answers.get(str(step.id), "")))
+            report.append({
+                "step_num": step.step_num,
+                "category": step.left_text or "",
+                "correct_role": step.right_text or "",
+                "student_role": selected.right_text if selected else "",
+                "is_correct": bool(selected and selected.id == step.id)
+            })
+        return jsonify({
+            "quiz_format": "option5",
+            "quiz_title": option.title,
+            "student_name": student.name,
+            "score": student.score,
+            "report": report
+        })
+
     if option.quiz_format == "option3":
         device_answers = student.answer_order.get("device_answers", []) if isinstance(student.answer_order, dict) else []
         quality_answers = student.answer_order.get("quality_answers", []) if isinstance(student.answer_order, dict) else []
@@ -1165,7 +1204,7 @@ def create_option():
     if not title or not code:
         return jsonify({"ok": False, "message": "Tiêu đề và mã đề thi không được để trống"}), 400
 
-    if code in ["option2", "option3", "option4"]:
+    if code in ["option2", "option3", "option4", "option5"]:
         return jsonify({"ok": False, "message": f"Không thể dùng mã '{code}' vì đây là mã bảo lưu hệ thống"}), 400
 
     existing = QuizOption.query.filter_by(code=code).first()
@@ -1191,6 +1230,22 @@ def create_option():
             db.session.add(step)
         db.session.commit()
 
+    # Start new basic-category quizzes with the same eight editable pairs.
+    if quiz_format == "option5":
+        matching_rows = [
+            ("Biểu đồ quản lý công số", "Quản lý hiện trạng sản xuất đạt được hằng ngày."),
+            ("Tiến độ sản xuất", "Xác nhận rõ sự tiến triển và chậm trễ của sản xuất"),
+            ("Quản lý lượng tồn kho", "Phát hiện dị thường theo sự tăng giảm của lượng tồn kho"),
+            ("Bản thao tác tiêu chuẩn", "Xác minh rõ về qui định thao tác"),
+            ("Hiệu suất hoạt động", "Thông báo bất thường từ số sản lượng của mỗi giờ"),
+            ("Bản quản lý sản lượng", "Cấu thành dây chuyền sản xuất\nCân bằng thời gian yêu cầu ở mỗi dây chuyền"),
+            ("Bản kế hoạch cải tiến", "Đối sách về các vấn đề đã phát sinh trong thực tế"),
+            ("Andon", "Thông báo chỉ thị thao tác, hiện trạng hoạt động của dây chuyền"),
+        ]
+        for idx, (category, role) in enumerate(matching_rows, start=1):
+            db.session.add(QuizStep(option_id=option.id, step_num=idx, image_url="", left_text=category, right_text=role, note_text="", reason_text=""))
+        db.session.commit()
+
     return jsonify({"ok": True, "message": "Tạo đề thi mới thành công", "option_id": option.id})
 
 
@@ -1201,7 +1256,7 @@ def update_option(option_id):
     if not option:
         return jsonify({"ok": False, "message": "Đề thi không tồn tại"}), 404
 
-    if not option.is_custom and option.code in ["option1", "option3", "option4"]:
+    if not option.is_custom and option.code in ["option1", "option3", "option4", "option5"]:
         # Allow editing Title, but keep code and format unchanged
         data = request.get_json(force=True)
         title = (data.get("title") or "").strip()

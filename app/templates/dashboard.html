@@ -475,6 +475,7 @@
           <select id="modalQuizFormat" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm font-semibold text-slate-700">
             <option value="option1">Kiểm tra thao tác đúc (Matching Grid)</option>
             <option value="option4">Kiểm tra chất lượng (Quality Control)</option>
+            <option value="option5">Kiểm tra hạng mục cơ bản</option>
           </select>
         </div>
         <div class="flex justify-end gap-3 pt-3 border-t border-slate-100">
@@ -782,6 +783,11 @@
               <th class="px-6 py-3.5 text-center rounded-r-xl w-40">Hành động</th>
             </tr>
           `;
+        } else if (data.quiz_format === 'option5') {
+          thead.innerHTML = `
+            <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
+              <th class="px-6 py-3.5 text-left rounded-l-xl w-16">Hạng</th><th class="px-6 py-3.5 text-left">Học viên</th><th class="px-6 py-3.5 text-center">Điểm</th><th class="px-6 py-3.5 text-center">Thoát tab</th><th class="px-6 py-3.5 text-center">Trạng thái</th><th class="px-6 py-3.5 text-center rounded-r-xl w-40">Hành động</th>
+            </tr>`;
         } else {
           thead.innerHTML = `
             <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-xs uppercase tracking-wider">
@@ -1382,6 +1388,8 @@
             </div>
           `;
           contentEl.innerHTML = html;
+        } else if (data.quiz_format === 'option5') {
+          contentEl.innerHTML = `<div class="space-y-3">${data.report.map(r => `<div class="border rounded-xl p-4 ${r.is_correct ? 'border-emerald-200 bg-emerald-50/40' : 'border-rose-200 bg-rose-50/40'}"><div class="font-bold text-slate-800 mb-2">${r.step_num}. ${escHtml(r.category)}</div><div class="text-xs text-slate-600">Học viên chọn: <strong>${escHtml(r.student_role || '—')}</strong></div><div class="text-xs text-slate-600 mt-1">Đáp án đúng: <strong>${escHtml(r.correct_role)}</strong></div></div>`).join('')}</div>`;
         } else {
           // Render option1 (Matching Grid) report
           let html = `
@@ -1621,7 +1629,9 @@
         tbody.innerHTML = quizzesList.map(q => {
           const typeBadge = q.code === 'option2' 
             ? '<span class="bg-purple-50 text-purple-700 font-bold border border-purple-200 px-2 py-0.5 rounded text-[10px] uppercase">TIE Matching</span>'
-            : '<span class="bg-blue-50 text-blue-700 font-bold border border-blue-200 px-2 py-0.5 rounded text-[10px] uppercase">Matching Grid</span>';
+            : q.quiz_format === 'option5'
+              ? '<span class="bg-amber-50 text-amber-700 font-bold border border-amber-200 px-2 py-0.5 rounded text-[10px] uppercase">Hạng mục cơ bản</span>'
+              : '<span class="bg-blue-50 text-blue-700 font-bold border border-blue-200 px-2 py-0.5 rounded text-[10px] uppercase">Matching Grid</span>';
           
           const labelBadge = q.is_custom 
             ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-semibold uppercase">Tự tạo</span>'

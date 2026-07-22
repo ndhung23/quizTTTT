@@ -97,7 +97,7 @@ def _seed_users():
 
 
 def _seed_quiz_options():
-    """Seed initial Option 1, Option 3, Option 4 quizzes and steps."""
+    """Seed the built-in quiz options and their steps."""
     from app.models.quiz_option import QuizOption
     from app.models.quiz_step import QuizStep
     
@@ -451,5 +451,44 @@ def _seed_quiz_options():
     except Exception as e:
         db.session.rollback()
         print(f"Option 4 seed warning: {e}")
+
+    # 4. OPTION 5 - Basic TIE category matching
+    try:
+        option5 = QuizOption.query.filter_by(code="option5").first()
+        if not option5:
+            option5 = QuizOption(
+                title="Kiểm tra hạng mục cơ bản",
+                code="option5",
+                is_custom=False,
+                quiz_format="option5"
+            )
+            db.session.add(option5)
+            db.session.commit()
+
+            matching_rows = [
+                ("Biểu đồ quản lý công số", "Quản lý hiện trạng sản xuất đạt được hằng ngày."),
+                ("Tiến độ sản xuất", "Xác nhận rõ sự tiến triển và chậm trễ của sản xuất"),
+                ("Quản lý lượng tồn kho", "Phát hiện dị thường theo sự tăng giảm của lượng tồn kho"),
+                ("Bản thao tác tiêu chuẩn", "Xác minh rõ về qui định thao tác"),
+                ("Hiệu suất hoạt động", "Thông báo bất thường từ số sản lượng của mỗi giờ"),
+                ("Bản quản lý sản lượng", "Cấu thành dây chuyền sản xuất\nCân bằng thời gian yêu cầu ở mỗi dây chuyền"),
+                ("Bản kế hoạch cải tiến", "Đối sách về các vấn đề đã phát sinh trong thực tế"),
+                ("Andon", "Thông báo chỉ thị thao tác, hiện trạng hoạt động của dây chuyền"),
+            ]
+            for idx, (category, role) in enumerate(matching_rows, start=1):
+                db.session.add(QuizStep(
+                    option_id=option5.id,
+                    step_num=idx,
+                    image_url="",
+                    left_text=category,
+                    right_text=role,
+                    note_text="",
+                    reason_text=""
+                ))
+            db.session.commit()
+            print("Seeded Option 5 successfully.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Option 5 seed warning: {e}")
 
 
