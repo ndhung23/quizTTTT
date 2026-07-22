@@ -454,6 +454,16 @@ def _seed_quiz_options():
 
     # 4. OPTION 5 - Basic TIE category matching
     try:
+        matching_rows = [
+            ("Biểu đồ quản lý công số", "Quản lý hiện trạng sản xuất đạt được hằng ngày."),
+            ("Tiến độ sản xuất", "Xác nhận rõ sự tiến triển và chậm trễ của sản xuất"),
+            ("Quản lý lượng tồn kho", "Phát hiện dị thường theo sự tăng giảm của lượng tồn kho"),
+            ("Bản thao tác tiêu chuẩn", "Xác minh rõ về qui định thao tác"),
+            ("Hiệu suất hoạt động", "Thông báo bất thường từ số sản lượng của mỗi giờ"),
+            ("Bản quản lý sản lượng", "Cấu thành dây chuyền sản xuất\nCân bằng thời gian yêu cầu ở mỗi dây chuyền"),
+            ("Bản kế hoạch cải tiến", "Đối sách về các vấn đề đã phát sinh trong thực tế"),
+            ("Andon", "Thông báo chỉ thị thao tác, hiện trạng hoạt động của dây chuyền"),
+        ]
         option5 = QuizOption.query.filter_by(code="option5").first()
         if not option5:
             option5 = QuizOption(
@@ -463,19 +473,17 @@ def _seed_quiz_options():
                 quiz_format="option5"
             )
             db.session.add(option5)
-            db.session.commit()
+            db.session.flush()
 
-            matching_rows = [
-                ("Biểu đồ quản lý công số", "Quản lý hiện trạng sản xuất đạt được hằng ngày."),
-                ("Tiến độ sản xuất", "Xác nhận rõ sự tiến triển và chậm trễ của sản xuất"),
-                ("Quản lý lượng tồn kho", "Phát hiện dị thường theo sự tăng giảm của lượng tồn kho"),
-                ("Bản thao tác tiêu chuẩn", "Xác minh rõ về qui định thao tác"),
-                ("Hiệu suất hoạt động", "Thông báo bất thường từ số sản lượng của mỗi giờ"),
-                ("Bản quản lý sản lượng", "Cấu thành dây chuyền sản xuất\nCân bằng thời gian yêu cầu ở mỗi dây chuyền"),
-                ("Bản kế hoạch cải tiến", "Đối sách về các vấn đề đã phát sinh trong thực tế"),
-                ("Andon", "Thông báo chỉ thị thao tác, hiện trạng hoạt động của dây chuyền"),
-            ]
-            for idx, (category, role) in enumerate(matching_rows, start=1):
+        # Repair partially seeded production databases. The option row may have
+        # been committed by an older deployment before its eight steps existed.
+        existing_step_nums = {
+            step.step_num
+            for step in QuizStep.query.filter_by(option_id=option5.id).all()
+        }
+        seeded_steps = 0
+        for idx, (category, role) in enumerate(matching_rows, start=1):
+            if idx not in existing_step_nums:
                 db.session.add(QuizStep(
                     option_id=option5.id,
                     step_num=idx,
@@ -485,8 +493,10 @@ def _seed_quiz_options():
                     note_text="",
                     reason_text=""
                 ))
-            db.session.commit()
-            print("Seeded Option 5 successfully.")
+                seeded_steps += 1
+        db.session.commit()
+        if seeded_steps:
+            print(f"Seeded/repaired Option 5 with {seeded_steps} missing steps.")
     except Exception as e:
         db.session.rollback()
         print(f"Option 5 seed warning: {e}")
